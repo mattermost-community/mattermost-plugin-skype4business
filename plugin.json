@@ -1,0 +1,27 @@
+{
+  "id": "skype4business",
+  "name": "Skype for Business",
+  "description": "Skype for Business plugin for Mattermost 5.2+.",
+  "version": "0.0.1",
+  "server": {
+    "executables": {
+      "linux-amd64": "server/dist/plugin-linux-amd64",
+      "darwin-amd64": "server/dist/plugin-darwin-amd64",
+      "windows-amd64": "server/dist/plugin-windows-amd64.exe"
+    }
+  },
+  "webapp": {
+    "bundle_path": "webapp/dist/main.js"
+  },
+  "settings_schema": {
+    "settings": [
+      {
+        "key": "ClientId",
+        "display_name": "Client ID",
+        "type": "text",
+        "help_text": "Application ID from the Azure Active Directory."
+      }
+    ],
+    "footer": "Use this URL to set up the app in the Azure Active Directory. See documentation to learn more.\n\n```https://SITEURL/plugins/skype4business/api/v1/popup/```"
+  }
+}
