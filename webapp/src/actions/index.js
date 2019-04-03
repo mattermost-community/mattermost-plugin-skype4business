@@ -7,11 +7,9 @@ import Client from '../client';
 
 export function startMeeting(channelId) {
     return async (dispatch, getState) => {
-
         try {
             await Client.createMeeting(channelId);
         } catch (error) {
-            console.log(error);
             const post = {
                 id: 's4bPlugin' + Date.now(),
                 create_at: Date.now(),

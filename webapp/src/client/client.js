@@ -1,24 +1,22 @@
 import request from 'superagent';
 
 export default class Client {
-
     constructor() {
-        this._autodiscoverServiceUrl = 'https://webdir.online.lync.com/autodiscover/autodiscoverservice.svc/root';
-        this._redirectUrl = window.location.origin + '/plugins/skype4business/api/v1/popup/';
-        this._postUrl = '/plugins/skype4business/api/v1/meetings';
-        this._clientIdUrl = '/plugins/skype4business/api/v1/client_id';
+        this.autodiscoverServiceUrl = 'https://webdir.online.lync.com/autodiscover/autodiscoverservice.svc/root';
+        this.redirectUrl = window.location.origin + '/plugins/skype4business/api/v1/popup/';
+        this.postUrl = '/plugins/skype4business/api/v1/meetings';
+        this.clientIdUrl = '/plugins/skype4business/api/v1/client_id';
     }
 
     createMeeting = async (channelId, personal = true, topic = '', meetingId = 0) => {
-
         let result;
 
         try {
-            await this._openNewWindow();
-            this._clientId = await this._getClientId();
-            const meetingUrl = await this._doCreateMeeting(this._autodiscoverServiceUrl);
-            this._closeWindow();
-            result = this._sendPost(this._postUrl, {
+            await this.openNewWindow();
+            this.clientId = await this.getClientId();
+            const meetingUrl = await this.doCreateMeeting(this.autodiscoverServiceUrl);
+            this.closeWindow();
+            result = this.sendPost(this.postUrl, {
                 channel_id: channelId,
                 personal,
                 topic,
@@ -26,63 +24,63 @@ export default class Client {
                 metting_url: meetingUrl,
             });
         } catch (error) {
-            this._closeWindow();
+            this.closeWindow();
             throw error;
         }
 
         return result;
     };
 
-    _openNewWindow = async () => {
+    openNewWindow = async () => {
         try {
-            this._popupWindow = window.open(this._redirectUrl, '_blank', 'toolbar=0,location=0,menubar=0,height=510,width=480');
-            if (this._popupWindow.focus) {
-                this._popupWindow.focus();
+            this.popupWindow = window.open(this.redirectUrl, '_blank', 'toolbar=0,location=0,menubar=0,height=510,width=480');
+            if (this.popupWindow.focus) {
+                this.popupWindow.focus();
             }
         } catch (error) {
-            console.log('error opening popup', error);
             throw new Error('Allow your browser to open pop-ups on this website');
         }
     };
 
-    _closeWindow = () => {
-        if (this._popupWindow) {
-            this._popupWindow.close();
-            this._popupWindow = undefined;
+    closeWindow = () => {
+        if (this.popupWindow) {
+            this.popupWindow.close();
+            this.popupWindow = null;
         }
     };
 
-    _getClientId = async () => {
+    getClientId = async () => {
         const response = await request.
-            get(this._clientIdUrl).
+            get(this.clientIdUrl).
             set('Accept', 'application/json');
 
         return response.body.client_id;
     };
 
-    _doCreateMeeting = async (autodiscoverServiceUrl) => {
-        const applicationsResourceHref = await this._getApplicationsHref(autodiscoverServiceUrl);
+    doCreateMeeting = async (autodiscoverServiceUrl) => {
+        const applicationsResourceHref = await this.getApplicationsHref(autodiscoverServiceUrl);
         const applicationsResourceName = applicationsResourceHref.substring(0, applicationsResourceHref.indexOf('/ucwa'));
 
-        const accessTokenToApplicationResource = await this._getAccessTokenForResource(applicationsResourceName);
+        const accessTokenToApplicationResource = await this.getAccessTokenForResource(applicationsResourceName);
 
-        const myOnlineMeetingsHref = await this._getMyOnlineMeetingsHref(applicationsResourceHref, accessTokenToApplicationResource);
+        const myOnlineMeetingsHref = await this.getMyOnlineMeetingsHref(applicationsResourceHref, accessTokenToApplicationResource);
 
-        let url = applicationsResourceName + myOnlineMeetingsHref;
+        const url = applicationsResourceName + myOnlineMeetingsHref;
 
-        return await this._sendMeetingData(url, accessTokenToApplicationResource);
+        const meetingData = await this.sendMeetingData(url, accessTokenToApplicationResource);
+        return meetingData;
     };
 
-    _getApplicationsHref = async (autodiscoverServiceUrl) => {
-
+    getApplicationsHref = async (autodiscoverServiceUrl) => {
         const autodiscoverResponse = await request.
             get(autodiscoverServiceUrl).
             set('Accept', 'application/json');
 
+        // eslint-disable-next-line no-underscore-dangle
         const userResourceHref = autodiscoverResponse.body._links.user.href;
         const userResourceName = userResourceHref.substring(0, userResourceHref.indexOf('/Autodiscover'));
 
-        let accessTokenToUserResource = await this._getAccessTokenForResource(userResourceName);
+        let accessTokenToUserResource = await this.getAccessTokenForResource(userResourceName);
         let authorizationValue = 'Bearer ' + accessTokenToUserResource;
 
         let userResourceResponse = await request.
@@ -91,7 +89,7 @@ export default class Client {
             set('Accept', 'application/json');
 
         if (userResourceResponse.status === 403) {
-            accessTokenToUserResource = await this._getAccessTokenForResource(userResourceName);
+            accessTokenToUserResource = await this.getAccessTokenForResource(userResourceName);
             authorizationValue = 'Bearer ' + accessTokenToUserResource;
             userResourceResponse = await request.
                 get(userResourceHref).
@@ -99,17 +97,22 @@ export default class Client {
                 set('Accept', 'application/json');
         }
 
-        if (userResourceResponse.body._links.applications) {
-            return userResourceResponse.body._links.applications.href;
-        } else if (userResourceResponse.body._links.redirect) {
-            return await this._getApplicationsHref(userResourceResponse.body._links.redirect.href);
-        } else {
-            throw new Error('Unexpected response');
+        // eslint-disable-next-line no-underscore-dangle
+        const links = userResourceResponse.body._links;
+
+        if (links.applications) {
+            return links.applications.href;
+        } else if (links.redirect) {
+            const applicationHref = await this.getApplicationsHref(links.redirect.href);
+            return applicationHref;
         }
+
+        throw new Error('Unexpected response');
     };
 
-    _getMyOnlineMeetingsHref = async (oauthAppliactionHref, accessToken) => {
+    getMyOnlineMeetingsHref = async (oauthAppliactionHref, accessToken) => {
         const authorizationValue = 'Bearer ' + accessToken;
+
         //todo
         const data = {
             UserAgent: 'UCWA Samples',
@@ -122,12 +125,13 @@ export default class Client {
             set('Accept', 'application/json').
             send(data);
 
+        // eslint-disable-next-line no-underscore-dangle
         return response.body._embedded.onlineMeetings._links.myOnlineMeetings.href;
     };
 
-    _sendMeetingData = async (url, appAccessToken) => {
+    sendMeetingData = async (url, appAccessToken) => {
         const data = {
-            'subject': 'Meeting created by the Mattermost Skype for Business plugin',
+            subject: 'Meeting created by the Mattermost Skype for Business plugin',
         };
 
         const response = await request.
@@ -139,53 +143,52 @@ export default class Client {
         return response.body.joinUrl;
     };
 
-    _getAccessTokenForResource = (resourceName) => {
+    getAccessTokenForResource = (resourceName) => {
         const secret = Math.random().toString(36).substr(2, 10);
+
         //removing the previous hash from the url if exists
-        this._popupWindow.location.href = this._redirectUrl;
-        this._popupWindow.location.href = 'https://login.microsoftonline.com/common/oauth2/authorize' +
+        this.popupWindow.location.href = this.redirectUrl;
+        this.popupWindow.location.href = 'https://login.microsoftonline.com/common/oauth2/authorize' +
             '?response_type=token' +
-            '&client_id=' + this._clientId +
-            '&redirect_uri=' + this._redirectUrl +
+            '&client_id=' + this.clientId +
+            '&redirect_uri=' + this.redirectUrl +
             '&state=' + secret +
             '&resource=' + resourceName;
 
         return new Promise((resolve, reject) => {
-
-            this._interval = setInterval(() => {
-
+            this.interval = setInterval(() => {
                 //safari
-                if (this._popupWindow.location === null) {
-                    clearInterval(this._interval);
-                    reject('User closed the popup window!');
+                if (this.popupWindow.location === null) {
+                    clearInterval(this.interval);
+                    reject(new Error('User closed the popup window!'));
                     return;
                 }
 
                 let currentHref;
 
                 try {
-                    currentHref = this._popupWindow.location.href;
+                    currentHref = this.popupWindow.location.href;
                 } catch (error) {
                     //Cross Domain url check error.
                     return;
                 }
 
                 //chrome
-                if (currentHref === undefined) {
-                    clearInterval(this._interval);
-                    reject('User closed the popup window!');
+                if (currentHref === 'undefined') {
+                    clearInterval(this.interval);
+                    reject(new Error('User closed the popup window!'));
                     return;
                 }
 
-                if (currentHref.indexOf(this._redirectUrl) > -1) {
-                    clearInterval(this._interval);
+                if (currentHref.indexOf(this.redirectUrl) > -1) {
+                    clearInterval(this.interval);
 
                     let accessToken;
                     let secretReturned;
                     let error;
                     let errorDescription;
 
-                    for (let p of this._popupWindow.location.hash.substr(1).split('&')) {
+                    for (const p of this.popupWindow.location.hash.substr(1).split('&')) {
                         if (p.indexOf('access_token=') === 0) {
                             accessToken = p.substr('access_token='.length);
                         } else if (p.indexOf('state=') === 0) {
@@ -198,18 +201,18 @@ export default class Client {
                     }
 
                     if (error) {
-                        reject(errorDescription ? errorDescription : error);
-                    } else if (secretReturned !== secret) {
-                        reject('Secrets don\t match!');
-                    } else {
+                        reject(errorDescription || error);
+                    } else if (secretReturned === secret) {
                         resolve(accessToken);
+                    } else {
+                        reject(new Error('Secrets don\t match!'));
                     }
                 }
             }, 1000);
         });
     };
 
-    _sendPost = async (url, body, headers = {}) => {
+    sendPost = async (url, body, headers = {}) => {
         headers['X-Requested-With'] = 'XMLHttpRequest';
 
         try {
@@ -226,5 +229,3 @@ export default class Client {
         }
     }
 }
-
-

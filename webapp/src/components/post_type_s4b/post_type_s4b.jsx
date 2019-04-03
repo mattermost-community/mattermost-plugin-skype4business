@@ -31,9 +31,8 @@ export default class PostTypeS4b extends React.PureComponent {
         const style = getStyle(this.props.theme);
         const post = this.props.post;
         const props = post.props || {};
-
-        let preText = `${this.props.creatorName} has started a meeting`;
-        let content = (
+        const preText = `${this.props.creatorName} has started a meeting`;
+        const content = (
             <a
                 className='btn btn-lg btn-primary'
                 style={style.button}

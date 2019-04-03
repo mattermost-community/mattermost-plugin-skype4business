@@ -29,17 +29,17 @@ module.exports = {
             },
             {
                 test: /\.scss$/,
-                    use: [
-                        {
-                            loader: 'sass-loader',
-                            options: {
-                                includePaths: ['node_modules/compass-mixins/lib'],
-                            },
+                use: [
+                    {
+                        loader: 'sass-loader',
+                        options: {
+                            includePaths: ['node_modules/compass-mixins/lib'],
                         },
-                    ],
+                    },
+                ],
             },
         ],
-},
+    },
     externals: {
         react: 'React',
         redux: 'Redux',
