@@ -112,11 +112,11 @@ export default class Client {
 
     getMyOnlineMeetingsHref = async (oauthAppliactionHref, accessToken) => {
         const authorizationValue = 'Bearer ' + accessToken;
+        const endpointId = this.generateUuid4();
 
-        //todo
         const data = {
-            UserAgent: 'UCWA Samples',
-            EndpointId: '123',
+            UserAgent: 'mm-skype4b-plugin',
+            EndpointId: endpointId,
             Culture: 'en-US',
         };
         const response = await request.
@@ -124,6 +124,10 @@ export default class Client {
             set('Authorization', authorizationValue).
             set('Accept', 'application/json').
             send(data);
+
+        if (response.body.endpointId !== endpointId) {
+            throw new Error('Endpoints don\'t match!');
+        }
 
         // eslint-disable-next-line no-underscore-dangle
         return response.body._embedded.onlineMeetings._links.myOnlineMeetings.href;
@@ -174,7 +178,7 @@ export default class Client {
                 }
 
                 //chrome
-                if (currentHref === 'undefined') {
+                if (!currentHref || currentHref === 'undefined') {
                     clearInterval(this.interval);
                     reject(new Error('User closed the popup window!'));
                     return;
@@ -227,5 +231,13 @@ export default class Client {
         } catch (err) {
             throw err;
         }
+    }
+
+    generateUuid4 = () => {
+        return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, (c) => {
+            // eslint-disable-next-line
+            let r = Math.random() * 16 | 0, v = c == 'x' ? r : (r & 0x3 | 0x8);
+            return v.toString(16);
+        });
     }
 }
