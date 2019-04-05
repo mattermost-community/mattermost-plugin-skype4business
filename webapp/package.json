@@ -16,8 +16,7 @@
     "react": "^16.4.1",
     "react-redux": "^5.0.7",
     "redux": "^4.0.0",
-    "superagent": ">=3.7.0",
-    "axios": "^0.18.0"
+    "superagent": ">=3.7.0"
   },
   "devDependencies": {
     "babel-core": "^6.26.3",
