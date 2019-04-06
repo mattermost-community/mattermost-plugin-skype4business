@@ -18,7 +18,6 @@ const (
 	POST_MEETING_KEY = "post_meeting_"
 )
 
-//todo tests
 type Plugin struct {
 	plugin.MattermostPlugin
 
@@ -31,27 +30,24 @@ type Plugin struct {
 }
 
 func (p *Plugin) OnActivate() error {
-	if err := p.IsConfigurationValid(); err != nil {
+	config := p.getConfiguration()
+	if err := config.IsValid(); err != nil {
 		return err
 	}
 
 	return nil
 }
 
-func (p *Plugin) IsConfigurationValid() error {
-	//todo
-	return nil
-}
-
 func (p *Plugin) ServeHTTP(c *plugin.Context, w http.ResponseWriter, r *http.Request) {
-	if err := p.IsConfigurationValid(); err != nil {
+	config := p.getConfiguration()
+	if err := config.IsValid(); err != nil {
 		http.Error(w, "This plugin is not configured.", http.StatusNotImplemented)
 		return
 	}
 
 	path := r.URL.Path
 	if strings.Contains(path, "/api/v1/popup/") {
-		p.handlePopup(w, r)
+		p.handleRedirectFromAAD(w, r)
 	} else {
 		switch path {
 		case "/api/v1/client_id":
@@ -68,7 +64,7 @@ type StartMeetingRequest struct {
 	ChannelId  string `json:"channel_id"`
 	Personal   bool   `json:"personal"`
 	Topic      string `json:"topic"`
-	MeetingId  int    `json:"meeting_id"`
+	MeetingId  string `json:"meeting_id"`
 	MeetingURL string `json:"metting_url"`
 }
 
@@ -76,7 +72,7 @@ type ClientIdResponse struct {
 	ClientId string `json:"client_id"`
 }
 
-func (p *Plugin) handlePopup(w http.ResponseWriter, r *http.Request) {
+func (p *Plugin) handleRedirectFromAAD(w http.ResponseWriter, r *http.Request) {
 	w.Write([]byte("<p>Creating the meeting...</p>"))
 }
 

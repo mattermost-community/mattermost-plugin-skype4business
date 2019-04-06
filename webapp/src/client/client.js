@@ -57,11 +57,11 @@ export default class Client {
         this.clientIdUrl = '/plugins/skype4business/api/v1/client_id';
     }
 
-    createMeeting = async (channelId, personal = true, topic = '', meetingId = 0) => {
+    createMeeting = async (channelId, personal = true, topic = '') => {
         let result;
 
         try {
-            const meetingUrl = await this.doCreateMeeting(this.autodiscoverServiceUrl);
+            const {meetingId, meetingUrl} = await this.doCreateMeeting(this.autodiscoverServiceUrl);
             result = this.sendPost(this.postUrl, {
                 channel_id: channelId,
                 personal,
@@ -85,10 +85,10 @@ export default class Client {
     };
 
     doCreateMeeting = async (autodiscoverServiceUrl) => {
-        this.clientId = await this.getClientId();
+        const clientId = await this.getClientId();
         this.authContext = new AuthenticationContext({
             redirectUri: window.location.origin + '/plugins/skype4business/api/v1/popup/',
-            clientId: this.clientId,
+            clientId,
             popUp: true,
             cacheLocation: 'localStorage',
             callback: this.onUserSignedIn.bind(this),
@@ -116,23 +116,11 @@ export default class Client {
         // eslint-disable-next-line no-underscore-dangle
         const userResourceHref = autodiscoverResponse.body._links.user.href;
         const userResourceName = userResourceHref.substring(0, userResourceHref.indexOf('/Autodiscover'));
-
-        let accessTokenToUserResource = await this.getAccessTokenForResource(userResourceName);
-        let authorizationValue = 'Bearer ' + accessTokenToUserResource;
-
-        let userResourceResponse = await request.
+        const accessTokenToUserResource = await this.getAccessTokenForResource(userResourceName);
+        const userResourceResponse = await request.
             get(userResourceHref).
-            set('Authorization', authorizationValue).
+            set('Authorization', 'Bearer ' + accessTokenToUserResource).
             set('Accept', 'application/json');
-
-        if (userResourceResponse.status === 403) {
-            accessTokenToUserResource = await this.getAccessTokenForResource(userResourceName);
-            authorizationValue = 'Bearer ' + accessTokenToUserResource;
-            userResourceResponse = await request.
-                get(userResourceHref).
-                set('Authorization', authorizationValue).
-                set('Accept', 'application/json');
-        }
 
         // eslint-disable-next-line no-underscore-dangle
         const links = userResourceResponse.body._links;
@@ -181,7 +169,10 @@ export default class Client {
             set('Accept', 'application/json').
             send(data);
 
-        return response.body.joinUrl;
+        return {
+            meetingId: response.body.onlineMeetingId,
+            meetingUrl: response.body.joinUrl,
+        };
     };
 
     sendPost = async (url, body, headers = {}) => {
