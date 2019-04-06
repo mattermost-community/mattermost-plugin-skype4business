@@ -22,7 +22,7 @@ export function startMeeting(channelId) {
                 root_id: '',
                 parent_id: '',
                 original_id: '',
-                message: 'An error occurred during creating the meeting. Please try later.',
+                message: 'An error occurred during creating the meeting. Make sure your browser doesn\'t block pop-ups on this website. Otherwise please try later.',
                 type: 'system_ephemeral',
                 props: {},
                 hashtags: '',

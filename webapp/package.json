@@ -11,6 +11,7 @@
     "fix": "eslint --ignore-pattern node_modules --ignore-pattern dist --ext .js --ext .jsx . --quiet --fix"
   },
   "dependencies": {
+    "adal-angular": "^1.0.17",
     "mattermost-redux": "5.4.0",
     "prop-types": "15.5.10",
     "react": "^16.4.1",

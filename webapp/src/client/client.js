@@ -1,9 +1,58 @@
 import request from 'superagent';
+import AuthenticationContext from 'adal-angular';
+
+// workaround for the "Token renewal operation failed due to timeout" issue
+// https://github.com/AzureAD/azure-activedirectory-library-for-js/issues/391#issuecomment-384784134
+// eslint-disable-next-line no-underscore-dangle
+AuthenticationContext.prototype._addAdalFrame = function _addAdalFrame(iframeId) {
+    if (typeof iframeId === 'undefined') {
+        return;
+    }
+
+    this.info('Add adal frame to document:' + iframeId);
+    let adalFrame = document.getElementById(iframeId);
+    const self = this;
+    const handleFrameCallback = () => {
+        if (adalFrame) {
+            self.handleWindowCallback(adalFrame.contentWindow.location.hash);
+        }
+    };
+
+    if (!adalFrame) {
+        if (document.createElement && document.documentElement &&
+            (window.opera || window.navigator.userAgent.indexOf('MSIE 5.0') === -1)) {
+            const ifr = document.createElement('iframe');
+            ifr.setAttribute('id', iframeId);
+            ifr.setAttribute('aria-hidden', 'true');
+
+            // added sandbox attribute to prevent site from reloading, you only need the token
+            ifr.setAttribute('sandbox', 'allow-same-origin');
+            ifr.addEventListener('load', handleFrameCallback, false);
+            ifr.style.visibility = 'hidden';
+            ifr.style.position = 'absolute';
+            ifr.style.width = '0px';
+            ifr.style.height = '0px';
+            ifr.style.border = 'none';
+
+            adalFrame = document.getElementsByTagName('body')[0].appendChild(ifr);
+        } else if (document.body && document.body.insertAdjacentHTML) {
+            document.body.insertAdjacentHTML(
+                'beforeEnd',
+                '<iframe name="' + iframeId + '" id="' + iframeId + '" style="display:none"></iframe>'
+            );
+        }
+        if (window.frames && window.frames[iframeId]) {
+            adalFrame = window.frames[iframeId];
+        }
+    }
+
+    // eslint-disable-next-line consistent-return
+    return adalFrame;
+};
 
 export default class Client {
     constructor() {
         this.autodiscoverServiceUrl = 'https://webdir.online.lync.com/autodiscover/autodiscoverservice.svc/root';
-        this.redirectUrl = window.location.origin + '/plugins/skype4business/api/v1/popup/';
         this.postUrl = '/plugins/skype4business/api/v1/meetings';
         this.clientIdUrl = '/plugins/skype4business/api/v1/client_id';
     }
@@ -12,10 +61,7 @@ export default class Client {
         let result;
 
         try {
-            await this.openNewWindow();
-            this.clientId = await this.getClientId();
             const meetingUrl = await this.doCreateMeeting(this.autodiscoverServiceUrl);
-            this.closeWindow();
             result = this.sendPost(this.postUrl, {
                 channel_id: channelId,
                 personal,
@@ -24,29 +70,10 @@ export default class Client {
                 metting_url: meetingUrl,
             });
         } catch (error) {
-            this.closeWindow();
             throw error;
         }
 
         return result;
-    };
-
-    openNewWindow = async () => {
-        try {
-            this.popupWindow = window.open(this.redirectUrl, '_blank', 'toolbar=0,location=0,menubar=0,height=510,width=480');
-            if (this.popupWindow.focus) {
-                this.popupWindow.focus();
-            }
-        } catch (error) {
-            throw new Error('Allow your browser to open pop-ups on this website');
-        }
-    };
-
-    closeWindow = () => {
-        if (this.popupWindow) {
-            this.popupWindow.close();
-            this.popupWindow = null;
-        }
     };
 
     getClientId = async () => {
@@ -58,6 +85,16 @@ export default class Client {
     };
 
     doCreateMeeting = async (autodiscoverServiceUrl) => {
+        this.clientId = await this.getClientId();
+        this.authContext = new AuthenticationContext({
+            redirectUri: window.location.origin + '/plugins/skype4business/api/v1/popup/',
+            clientId: this.clientId,
+            popUp: true,
+            cacheLocation: 'localStorage',
+            callback: this.onUserSignedIn.bind(this),
+            navigateToLoginRequestUrl: false,
+        });
+        await this.assureUserIsSignedIn();
         const applicationsResourceHref = await this.getApplicationsHref(autodiscoverServiceUrl);
         const applicationsResourceName = applicationsResourceHref.substring(0, applicationsResourceHref.indexOf('/ucwa'));
 
@@ -147,75 +184,6 @@ export default class Client {
         return response.body.joinUrl;
     };
 
-    getAccessTokenForResource = (resourceName) => {
-        const secret = Math.random().toString(36).substr(2, 10);
-
-        //removing the previous hash from the url if exists
-        this.popupWindow.location.href = this.redirectUrl;
-        this.popupWindow.location.href = 'https://login.microsoftonline.com/common/oauth2/authorize' +
-            '?response_type=token' +
-            '&client_id=' + this.clientId +
-            '&redirect_uri=' + this.redirectUrl +
-            '&state=' + secret +
-            '&resource=' + resourceName;
-
-        return new Promise((resolve, reject) => {
-            this.interval = setInterval(() => {
-                //safari
-                if (this.popupWindow.location === null) {
-                    clearInterval(this.interval);
-                    reject(new Error('User closed the popup window!'));
-                    return;
-                }
-
-                let currentHref;
-
-                try {
-                    currentHref = this.popupWindow.location.href;
-                } catch (error) {
-                    //Cross Domain url check error.
-                    return;
-                }
-
-                //chrome
-                if (!currentHref || currentHref === 'undefined') {
-                    clearInterval(this.interval);
-                    reject(new Error('User closed the popup window!'));
-                    return;
-                }
-
-                if (currentHref.indexOf(this.redirectUrl) > -1) {
-                    clearInterval(this.interval);
-
-                    let accessToken;
-                    let secretReturned;
-                    let error;
-                    let errorDescription;
-
-                    for (const p of this.popupWindow.location.hash.substr(1).split('&')) {
-                        if (p.indexOf('access_token=') === 0) {
-                            accessToken = p.substr('access_token='.length);
-                        } else if (p.indexOf('state=') === 0) {
-                            secretReturned = p.substr('state='.length);
-                        } else if (p.indexOf('error=') === 0) {
-                            error = p.substr('error='.length);
-                        } else if (p.indexOf('error_description=') === 0) {
-                            errorDescription = p.substr('error_description='.length);
-                        }
-                    }
-
-                    if (error) {
-                        reject(errorDescription || error);
-                    } else if (secretReturned === secret) {
-                        resolve(accessToken);
-                    } else {
-                        reject(new Error('Secrets don\t match!'));
-                    }
-                }
-            }, 1000);
-        });
-    };
-
     sendPost = async (url, body, headers = {}) => {
         headers['X-Requested-With'] = 'XMLHttpRequest';
 
@@ -231,13 +199,57 @@ export default class Client {
         } catch (err) {
             throw err;
         }
-    }
+    };
 
     generateUuid4 = () => {
         return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, (c) => {
             // eslint-disable-next-line
-            let r = Math.random() * 16 | 0, v = c == 'x' ? r : (r & 0x3 | 0x8);
+            let r = Math.random() * 16 | 0, v = c === 'x' ? r : (r & 0x3 | 0x8);
             return v.toString(16);
         });
-    }
+    };
+
+    getAccessTokenForResource = async (resourceName) => {
+        const authContext = this.authContext;
+        const self = this;
+
+        return new Promise((resolve, reject) => {
+            self.resolveIfSignedIn = resolve;
+
+            authContext.acquireToken(resourceName, (errorDesc, token, error) => {
+                if (error) {
+                    authContext.acquireTokenPopup(resourceName, null, null, (errorDesc2, token2, error2) => {
+                        if (error2) {
+                            return reject(new Error(errorDesc2));
+                        }
+
+                        return resolve(token2);
+                    });
+                }
+
+                return resolve(token);
+            });
+        });
+    };
+
+    assureUserIsSignedIn = async () => {
+        return new Promise((resolve, reject) => {
+            const user = this.authContext.getCachedUser();
+            if (user) {
+                resolve();
+            } else {
+                this.resolveIfSignedIn = resolve;
+                this.rejectIfNotSigned = reject;
+                this.authContext.login();
+            }
+        });
+    };
+
+    onUserSignedIn = (errorDesc, token, error) => {
+        if (error && this.rejectIfNotSigned) {
+            this.rejectIfNotSigned(new Error(errorDesc));
+        } else if (this.resolveIfSignedIn) {
+            this.resolveIfSignedIn(token);
+        }
+    };
 }
