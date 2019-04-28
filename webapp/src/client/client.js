@@ -1,6 +1,9 @@
 import request from 'superagent';
 import AuthenticationContext from 'adal-angular';
 
+import {isDesktopApp} from '../utils/user_utils';
+import {Periods} from '../constants';
+
 // workaround for the "Token renewal operation failed due to timeout" issue
 // https://github.com/AzureAD/azure-activedirectory-library-for-js/issues/391#issuecomment-384784134
 // eslint-disable-next-line no-underscore-dangle
@@ -50,18 +53,88 @@ AuthenticationContext.prototype._addAdalFrame = function _addAdalFrame(iframeId)
     return adalFrame;
 };
 
+// workaround for issues with the Desktop App
+// eslint-disable-next-line no-underscore-dangle
+AuthenticationContext.prototype._loginPopup = function _loginPopup(urlNavigate, resource, callback) {
+    const targetUrl = this.config.popupRedirectUrl + encodeURIComponent(urlNavigate + '&response_mode=form_post');
+
+    let popupWindow;
+    if (this.config.isDesktopApp) {
+        popupWindow = window.open(targetUrl, 'login', 'width=' + this.CONSTANTS.POPUP_WIDTH + ', height=' + this.CONSTANTS.POPUP_HEIGHT);
+    } else {
+        // eslint-disable-next-line no-underscore-dangle
+        popupWindow = this._openPopup(targetUrl, 'login', this.CONSTANTS.POPUP_WIDTH, this.CONSTANTS.POPUP_HEIGHT);
+    }
+    const loginCallback = callback || this.callback;
+
+    if (!this.config.isDesktopApp && popupWindow == null) {
+        const error = 'Error opening popup';
+        const errorDesc = 'Popup Window is null. This can happen if you are using IE';
+        // eslint-disable-next-line no-underscore-dangle
+        this._handlePopupError(loginCallback, resource, error, errorDesc, errorDesc);
+        return;
+    }
+
+    const pollTimer = setInterval(() => {
+        if (!this.config.isDesktopApp) {
+            // eslint-disable-next-line no-undefined
+            if (!popupWindow || popupWindow.closed || popupWindow.closed === undefined) {
+                const error = 'Popup Window closed';
+                const errorDesc = 'Popup Window closed by UI action/ Popup Window handle destroyed due to cross zone navigation in IE/Edge';
+
+                if (this.isAngular) {
+                    // eslint-disable-next-line no-underscore-dangle
+                    this._broadcast('adal:popUpClosed', errorDesc + this.CONSTANTS.RESOURCE_DELIMETER + error);
+                }
+
+                // eslint-disable-next-line no-underscore-dangle
+                this._handlePopupError(loginCallback, resource, error, errorDesc, errorDesc);
+                clearInterval(pollTimer);
+                return;
+            }
+        }
+
+        const {token, state} = this.config.getAuthenticationResult();
+        if (token) {
+            // eslint-disable-next-line no-underscore-dangle
+            const decodedToken = this._extractIdToken(token);
+
+            window.localStorage.setItem(this.CONSTANTS.STORAGE.IDTOKEN, token);
+            window.localStorage.setItem(this.CONSTANTS.STORAGE.STATE_LOGIN, decodedToken.upn);
+
+            this.getCachedUser();
+            this.handleWindowCallback('#access_token=' + token + '&state=' + state);
+
+            // eslint-disable-next-line no-underscore-dangle
+            this._loginInProgress = false;
+            // eslint-disable-next-line no-underscore-dangle
+            this._acquireTokenInProgress = false;
+            // eslint-disable-next-line no-underscore-dangle
+            this._openedWindows = [];
+
+            clearInterval(pollTimer);
+        }
+    });
+
+    if (this.config.isDesktopApp) {
+        setTimeout(() => clearInterval(pollTimer), Periods.FIVE_MINUTES_IN_MILISECONDS);
+    }
+};
+
 export default class Client {
     constructor() {
         this.autodiscoverServiceUrl = 'https://webdir.online.lync.com/autodiscover/autodiscoverservice.svc/root';
         this.postUrl = '/plugins/skype4business/api/v1/meetings';
         this.clientIdUrl = '/plugins/skype4business/api/v1/client_id';
+        this.authUrl = '/plugins/skype4business/api/v1/auth';
+        this.redirectUrl = '/plugins/skype4business/api/v1/popup/';
     }
 
-    createMeeting = async (channelId, personal = true, topic = '') => {
+    createMeeting = async (channelId, currentUserId, getAuthenticationResult, personal = true, topic = '') => {
         let result;
 
         try {
-            const {meetingId, meetingUrl} = await this.doCreateMeeting(this.autodiscoverServiceUrl);
+            const {meetingId, meetingUrl} = await this.doCreateMeeting(currentUserId, getAuthenticationResult);
             result = this.sendPost(this.postUrl, {
                 channel_id: channelId,
                 personal,
@@ -84,18 +157,21 @@ export default class Client {
         return response.body.client_id;
     };
 
-    doCreateMeeting = async (autodiscoverServiceUrl) => {
+    doCreateMeeting = async (currentUserId, getAuthenticationResult) => {
         const clientId = await this.getClientId();
         this.authContext = new AuthenticationContext({
-            redirectUri: window.location.origin + '/plugins/skype4business/api/v1/popup/',
             clientId,
             popUp: true,
             cacheLocation: 'localStorage',
             callback: this.onUserSignedIn.bind(this),
             navigateToLoginRequestUrl: false,
+            isDesktopApp: isDesktopApp(),
+            redirectUri: window.location.origin + this.redirectUrl,
+            popupRedirectUrl: this.authUrl + '?mattermost_user_id=' + currentUserId + '+&navigateTo=',
+            getAuthenticationResult,
         });
         await this.assureUserIsSignedIn();
-        const applicationsResourceHref = await this.getApplicationsHref(autodiscoverServiceUrl);
+        const applicationsResourceHref = await this.getApplicationsHref(this.autodiscoverServiceUrl);
         const applicationsResourceName = applicationsResourceHref.substring(0, applicationsResourceHref.indexOf('/ucwa'));
 
         const accessTokenToApplicationResource = await this.getAccessTokenForResource(applicationsResourceName);

@@ -2,7 +2,9 @@
 // See License for license information.
 
 import Svgs from './svgs.js';
+import Periods from './periods.js';
 
 export {
     Svgs,
+    Periods,
 };

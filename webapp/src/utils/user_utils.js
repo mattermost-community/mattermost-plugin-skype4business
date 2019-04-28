@@ -18,3 +18,8 @@ export function displayUsernameForUser(user, config) {
 
     return '';
 }
+
+export function isDesktopApp() {
+    const userAgent = window.navigator.userAgent;
+    return userAgent.indexOf('Mattermost') !== -1 && userAgent.indexOf('Electron') !== -1;
+}
