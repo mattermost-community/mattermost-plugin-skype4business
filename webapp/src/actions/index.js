@@ -18,9 +18,9 @@ export function startMeeting(channelId) {
         try {
             await Client.createMeeting(channelId, currentUserId, getAuthenticationResult);
         } catch (error) {
-            createTemporaryPost(channelId, getState, 'An error occurred during creating the meeting. Make sure your browser doesn\'t block pop-ups on this website. Otherwise please try later.', dispatch);
+            createTemporaryPost(channelId, getState, error.message, dispatch);
 
-            result = {error};
+            result = {error: error.message};
         }
 
         dispatch({

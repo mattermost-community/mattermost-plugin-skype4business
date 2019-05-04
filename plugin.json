@@ -16,12 +16,36 @@
   "settings_schema": {
     "settings": [
       {
+        "key": "isServerVersion",
+        "display_name": "Is server version?",
+        "type": "bool",
+        "help_text": "Do you use Skype for Business Server version?"
+      },
+      {
         "key": "ClientId",
         "display_name": "Client ID",
         "type": "text",
-        "help_text": "Application ID from the Azure Active Directory."
+        "help_text": "Application ID from the Azure Active Directory (required for Skype for Business Online)."
+      },
+      {
+        "key": "Username",
+        "display_name": "Bot username",
+        "type": "text",
+        "help_text": "Login of the bot account (required for Skype for Business Server)."
+      },
+      {
+        "key": "Password",
+        "display_name": "Bot password",
+        "type": "text",
+        "help_text": "Password for the bot account (required for Skype for Business Server)."
+      },
+      {
+        "key": "Domain",
+        "display_name": "Domain",
+        "type": "text",
+        "help_text": "Domain where Skype for Business is runnning, e.g. contoso.com (required for Skype for Business Server)."
       }
     ],
-    "footer": "Use this URL to set up the app in the Azure Active Directory. See documentation to learn more.\n\n```https://SITEURL/plugins/skype4business/api/v1/popup/```"
+    "footer": "Use this URL to set up the app in the Azure Active Directory. See documentation to learn more.\n\n```https://SITEURL/plugins/skype4business/api/v1/auth_redirect```"
   }
 }

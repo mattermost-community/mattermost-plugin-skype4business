@@ -124,29 +124,36 @@ AuthenticationContext.prototype._loginPopup = function _loginPopup(urlNavigate, 
 export default class Client {
     constructor() {
         this.autodiscoverServiceUrl = 'https://webdir.online.lync.com/autodiscover/autodiscoverservice.svc/root';
-        this.postUrl = '/plugins/skype4business/api/v1/meetings';
+        this.registerMeetingFromOnlineVersionUrl = '/plugins/skype4business/api/v1/register_meeting_from_online_version';
         this.clientIdUrl = '/plugins/skype4business/api/v1/client_id';
+        this.createMeetingInServerVersionUrl = '/plugins/skype4business/api/v1/create_meeting_in_server_version';
+        this.isServerVersionUrl = '/plugins/skype4business/api/v1/is_server_version';
         this.authUrl = '/plugins/skype4business/api/v1/auth';
-        this.redirectUrl = '/plugins/skype4business/api/v1/popup/';
+        this.redirectUrl = '/plugins/skype4business/api/v1/auth_redirect';
     }
 
     createMeeting = async (channelId, currentUserId, getAuthenticationResult, personal = true, topic = '') => {
-        let result;
+        let isServerVersion;
 
         try {
-            const {meetingId, meetingUrl} = await this.doCreateMeeting(currentUserId, getAuthenticationResult);
-            result = this.sendPost(this.postUrl, {
-                channel_id: channelId,
-                personal,
-                topic,
-                meeting_id: meetingId,
-                metting_url: meetingUrl,
-            });
+            isServerVersion = await this.isServerVersion();
         } catch (error) {
-            throw error;
+            throw new Error('Cannot connect with the server. Please try later.');
         }
 
-        return result;
+        try {
+            if (isServerVersion) {
+                await this.doCreateMeetingInServerVersion(channelId, personal);
+            } else {
+                await this.doCreateMeetingInOnlineVersion(channelId, currentUserId, getAuthenticationResult, personal, topic);
+            }
+        } catch (error) {
+            if (isServerVersion) {
+                throw new Error('An error occurred during creating the meeting. Please try later.');
+            } else {
+                throw new Error('An error occurred during creating the meeting. Make sure your browser doesn\'t block pop-ups on this website. Otherwise please try later.');
+            }
+        }
     };
 
     getClientId = async () => {
@@ -157,7 +164,28 @@ export default class Client {
         return response.body.client_id;
     };
 
-    doCreateMeeting = async (currentUserId, getAuthenticationResult) => {
+    doCreateMeetingInServerVersion = async (channelId, personal) => {
+        const headers = {};
+        headers['X-Requested-With'] = 'XMLHttpRequest';
+
+        try {
+            const response = await request.
+                post(this.createMeetingInServerVersionUrl).
+                send({
+                    channel_id: channelId,
+                    personal,
+                }).
+                set(headers).
+                type('application/json').
+                accept('application/json');
+
+            return response.body;
+        } catch (err) {
+            throw err;
+        }
+    };
+
+    doCreateMeetingInOnlineVersion = async (channelId, currentUserId, getAuthenticationResult, personal, topic) => {
         const clientId = await this.getClientId();
         this.authContext = new AuthenticationContext({
             clientId,
@@ -180,8 +208,15 @@ export default class Client {
 
         const url = applicationsResourceName + myOnlineMeetingsHref;
 
-        const meetingData = await this.sendMeetingData(url, accessTokenToApplicationResource);
-        return meetingData;
+        const {meetingId, meetingUrl} = await this.sendMeetingData(url, accessTokenToApplicationResource);
+
+        this.sendPost(this.registerMeetingFromOnlineVersionUrl, {
+            channel_id: channelId,
+            personal,
+            topic,
+            meeting_id: meetingId,
+            metting_url: meetingUrl,
+        });
     };
 
     getApplicationsHref = async (autodiscoverServiceUrl) => {
@@ -211,7 +246,7 @@ export default class Client {
         throw new Error('Unexpected response');
     };
 
-    getMyOnlineMeetingsHref = async (oauthAppliactionHref, accessToken) => {
+    getMyOnlineMeetingsHref = async (oauthApplicationHref, accessToken) => {
         const authorizationValue = 'Bearer ' + accessToken;
         const endpointId = this.generateUuid4();
 
@@ -221,7 +256,7 @@ export default class Client {
             Culture: 'en-US',
         };
         const response = await request.
-            post(oauthAppliactionHref).
+            post(oauthApplicationHref).
             set('Authorization', authorizationValue).
             set('Accept', 'application/json').
             send(data);
@@ -318,5 +353,13 @@ export default class Client {
         } else if (this.resolveIfSignedIn) {
             this.resolveIfSignedIn(token);
         }
+    };
+
+    isServerVersion = async () => {
+        const response = await request.
+            get(this.isServerVersionUrl).
+            set('Accept', 'application/json');
+
+        return response.body.is_server_version === 'Y';
     };
 }

@@ -16,16 +16,15 @@ import (
 
 func TestPlugin(t *testing.T) {
 
-	validMeetingRequest := httptest.NewRequest("POST", "/api/v1/meetings", strings.NewReader("{\"channel_id\": \"thechannelid\", \"meeting_id\": \"L30IC51J\"}"))
+	validMeetingRequest := httptest.NewRequest("POST", "/api/v1/register_meeting_from_online_version", strings.NewReader("{\"channel_id\": \"thechannelid\", \"meeting_id\": \"L30IC51J\"}"))
 	validMeetingRequest.Header.Add("Mattermost-User-Id", "theuserid")
 
 	validClientIdRequest := httptest.NewRequest("GET", "/api/v1/client_id", nil)
 	validClientIdRequest.Header.Add("Mattermost-User-Id", "theuserid")
 
-	noAuthMeetingRequest := httptest.NewRequest("POST", "/api/v1/meetings", strings.NewReader("{\"channel_id\": \"thechannelid\"}"))
-	noAuthClientIdRequest := httptest.NewRequest("GET", "/api/v1/client_id", nil)
+	noAuthMeetingRequest := httptest.NewRequest("POST", "/api/v1/register_meeting_from_online_version", strings.NewReader("{\"channel_id\": \"thechannelid\"}"))
 
-	personalMeetingRequest := httptest.NewRequest("POST", "/api/v1/meetings", strings.NewReader("{\"channel_id\": \"thechannelid\", \"meeting_id\": \"L30IC51J\", \"personal\": true}"))
+	personalMeetingRequest := httptest.NewRequest("POST", "/api/v1/register_meeting_from_online_version", strings.NewReader("{\"channel_id\": \"thechannelid\", \"meeting_id\": \"L30IC51J\", \"personal\": true}"))
 	personalMeetingRequest.Header.Add("Mattermost-User-Id", "theuserid")
 
 	for name, tc := range map[string]struct {
@@ -36,18 +35,6 @@ func TestPlugin(t *testing.T) {
 		"UnauthorizedMeetingRequest": {
 			Request:            noAuthMeetingRequest,
 			ExpectedStatusCode: http.StatusUnauthorized,
-		},
-		"UnauthorizedClientIdRequest": {
-			Request:            noAuthClientIdRequest,
-			ExpectedStatusCode: http.StatusUnauthorized,
-		},
-		"ValidMeetingRequest": {
-			Request:            validMeetingRequest,
-			ExpectedStatusCode: http.StatusOK,
-		},
-		"ValidPersonalMeetingRequest": {
-			Request:            personalMeetingRequest,
-			ExpectedStatusCode: http.StatusOK,
 		},
 	} {
 		t.Run(name, func(t *testing.T) {
