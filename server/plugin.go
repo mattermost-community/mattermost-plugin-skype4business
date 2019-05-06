@@ -455,7 +455,6 @@ func (p *Plugin) handleCreateMeetingInServerVersion(w http.ResponseWriter, r *ht
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
-	fmt.Println("222")
 
 	newMeetingRequest, err := http.NewRequest("POST", applicationState.OnlineMeetingsUrl, bytes.NewBuffer(newMeetingRequestBytes))
 	if err != nil {
@@ -485,12 +484,10 @@ func (p *Plugin) handleCreateMeetingInServerVersion(w http.ResponseWriter, r *ht
 	newMeetingResponseBody := &NewMeetingResponse{}
 	err = json.Unmarshal(newMeetingResponseBytes, newMeetingResponseBody)
 	if err != nil {
-		fmt.Println("respo", string(newMeetingResponseBytes))
 		fmt.Println(err.Error())
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
-	fmt.Println("66")
 
 	post := &model.Post{
 		UserId:    user.Id,
