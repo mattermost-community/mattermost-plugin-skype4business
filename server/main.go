@@ -8,5 +8,7 @@ import (
 )
 
 func main() {
-	plugin.ClientMain(&Plugin{})
+	plugin.ClientMain(&Plugin{
+		client: NewClient(),
+	})
 }

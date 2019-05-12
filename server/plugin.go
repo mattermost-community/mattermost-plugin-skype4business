@@ -4,11 +4,8 @@
 package main
 
 import (
-	"bytes"
-	"crypto/tls"
 	"encoding/json"
 	"fmt"
-	"io/ioutil"
 	"net/http"
 	"net/url"
 	"regexp"
@@ -28,6 +25,14 @@ const (
 	WS_EVENT_AUTHENTICATED         = "authenticated"
 )
 
+type IClient interface {
+	authenticate(url string, body url.Values) (*AuthResponse, error)
+	createNewApplication(url string, body interface{}, token string) (*NewApplicationResponse, error)
+	createNewMeeting(url string, body interface{}, token string) (*NewMeetingResponse, error)
+	performDiscovery(url string) (*DiscoveryResponse, error)
+	readUserResource(url string, token string) (*UserResourceResponse, error)
+}
+
 type Plugin struct {
 	plugin.MattermostPlugin
 
@@ -37,6 +42,8 @@ type Plugin struct {
 	// configuration is the active plugin configuration. Consult getConfiguration and
 	// setConfiguration for usage.
 	configuration *configuration
+
+	client IClient
 }
 
 func (p *Plugin) OnActivate() error {
@@ -72,99 +79,6 @@ func (p *Plugin) ServeHTTP(c *plugin.Context, w http.ResponseWriter, r *http.Req
 	default:
 		http.NotFound(w, r)
 	}
-}
-
-type StartMeetingRequest struct {
-	ChannelId  string `json:"channel_id"`
-	Personal   bool   `json:"personal"`
-	Topic      string `json:"topic"`
-	MeetingId  string `json:"meeting_id"`
-	MeetingURL string `json:"metting_url"`
-}
-
-type StartServerMeetingRequest struct {
-	ChannelId string `json:"channel_id"`
-	Personal  bool   `json:"personal"`
-}
-
-type ClientIdResponse struct {
-	ClientId string `json:"client_id"`
-}
-
-type IsServerVersionResponse struct {
-	IsServerVersion string `json:"is_server_version"`
-}
-
-type State struct {
-	userId string
-	State  string
-}
-
-type NewMeetingRequest struct {
-	Subject string `json:"subject"`
-}
-
-type NewMeetingResponse struct {
-	JoinUrl   string `json:"joinUrl"`
-	MeetingId string `json:"onlineMeetingId"`
-}
-
-type DiscoveryResponse struct {
-	Links struct {
-		User struct {
-			Href string `json:"href"`
-		} `json:"user"`
-		Applications struct {
-			Href string `json:"href"`
-		} `json:"applications"`
-		Redirect struct {
-			Href string `json:"href"`
-		} `json:"redirect"`
-	} `json:"_links"`
-}
-
-type NewApplicationRequest struct {
-	UserAgent  string `json:"UserAgent"`
-	EndpointId string `json:"EndpointId"`
-	Culture    string `json:"Culture"`
-}
-
-type NewApplicationResponse struct {
-	Embedded struct {
-		OnlineMeetings struct {
-			OnlineMeetingsLinks struct {
-				MyOnlineMeetings struct {
-					Href string `json:"href"`
-				} `json:"myOnlineMeetings"`
-			} `json:"_links"`
-		} `json:"onlineMeetings"`
-	} `json:"_embedded"`
-}
-
-type AuthResponse struct {
-	Access_token string
-}
-
-type UserResourceResponse struct {
-	Links struct {
-		Applications struct {
-			Href string `json:"href"`
-		} `json:"applications"`
-		Redirect struct {
-			Href string `json:"href"`
-		} `json:"redirect"`
-	} `json:"_links"`
-}
-
-type APIError struct {
-	Message string
-}
-
-type ApplicationState struct {
-	OnlineMeetingsUrl string
-	ApplicationsUrl   string
-	Resource          string
-	Token             string
 }
 
 func (p *Plugin) handleAuthorizeInADD(w http.ResponseWriter, r *http.Request) {
@@ -402,7 +316,6 @@ func (p *Plugin) handleRegisterMeetingFromOnlineVersion(w http.ResponseWriter, r
 }
 
 func (p *Plugin) handleCreateMeetingInServerVersion(w http.ResponseWriter, r *http.Request) {
-
 	config := p.getConfiguration()
 	if !config.IsServerVersion {
 		http.Error(w, "Forbidden", http.StatusForbidden)
@@ -447,42 +360,13 @@ func (p *Plugin) handleCreateMeetingInServerVersion(w http.ResponseWriter, r *ht
 		return
 	}
 
-	newMeetingRequestBytes, err := json.Marshal(NewMeetingRequest{
-		Subject: "Meeting created by " + user.Username,
-	})
-	if err != nil {
-		fmt.Println(err.Error())
-		http.Error(w, err.Error(), http.StatusInternalServerError)
-		return
-	}
-
-	newMeetingRequest, err := http.NewRequest("POST", applicationState.OnlineMeetingsUrl, bytes.NewBuffer(newMeetingRequestBytes))
-	if err != nil {
-		fmt.Println(err.Error())
-		http.Error(w, err.Error(), http.StatusInternalServerError)
-		return
-	}
-
-	newMeetingRequest.Header.Set("Authorization", "Bearer "+applicationState.Token)
-	newMeetingRequest.Header.Set("Accept", "application/json")
-	newMeetingRequest.Header.Set("Content-Type", "application/json")
-
-	newMeetingResponse, err := p.getClient().Do(newMeetingRequest)
-	if err != nil {
-		fmt.Println(err.Error())
-		http.Error(w, err.Error(), http.StatusInternalServerError)
-		return
-	}
-
-	newMeetingResponseBytes, err := ioutil.ReadAll(newMeetingResponse.Body)
-	if err != nil {
-		fmt.Println(err.Error())
-		http.Error(w, err.Error(), http.StatusInternalServerError)
-		return
-	}
-
-	newMeetingResponseBody := &NewMeetingResponse{}
-	err = json.Unmarshal(newMeetingResponseBytes, newMeetingResponseBody)
+	newMeetingResponse, err := p.client.createNewMeeting(
+		applicationState.OnlineMeetingsUrl,
+		NewMeetingRequest{
+			Subject: "Meeting created by " + user.Username,
+		},
+		applicationState.Token,
+	)
 	if err != nil {
 		fmt.Println(err.Error())
 		http.Error(w, err.Error(), http.StatusInternalServerError)
@@ -492,11 +376,11 @@ func (p *Plugin) handleCreateMeetingInServerVersion(w http.ResponseWriter, r *ht
 	post := &model.Post{
 		UserId:    user.Id,
 		ChannelId: req.ChannelId,
-		Message:   fmt.Sprintf("Meeting started at %s.", newMeetingResponseBody.JoinUrl),
+		Message:   fmt.Sprintf("Meeting started at %s.", newMeetingResponse.JoinUrl),
 		Type:      POST_MEETING_TYPE,
 		Props: map[string]interface{}{
-			"meeting_id":        newMeetingResponseBody.MeetingId,
-			"meeting_link":      newMeetingResponseBody.JoinUrl,
+			"meeting_id":        newMeetingResponse.MeetingId,
+			"meeting_link":      newMeetingResponse.JoinUrl,
 			"meeting_personal":  req.Personal,
 			"override_username": POST_MEETING_OVERRIDE_USERNAME,
 			"meeting_topic":     "Meeting created by " + user.Username,
@@ -511,7 +395,7 @@ func (p *Plugin) handleCreateMeetingInServerVersion(w http.ResponseWriter, r *ht
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	} else {
-		err = p.API.KVSet(fmt.Sprintf("%v%v", POST_MEETING_KEY, newMeetingResponseBody.MeetingId), []byte(post.Id))
+		err = p.API.KVSet(fmt.Sprintf("%v%v", POST_MEETING_KEY, newMeetingResponse.MeetingId), []byte(post.Id))
 		if err != nil {
 			fmt.Println(err.Error())
 			http.Error(w, err.Error(), http.StatusInternalServerError)
@@ -519,7 +403,7 @@ func (p *Plugin) handleCreateMeetingInServerVersion(w http.ResponseWriter, r *ht
 		}
 	}
 
-	if err := json.NewEncoder(w).Encode(&newMeetingResponseBody); err != nil {
+	if err := json.NewEncoder(w).Encode(&newMeetingResponse); err != nil {
 		fmt.Println(err.Error())
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 	}
@@ -528,175 +412,72 @@ func (p *Plugin) handleCreateMeetingInServerVersion(w http.ResponseWriter, r *ht
 }
 
 func (p *Plugin) fetchOnlineMeetingsUrl() (*ApplicationState, *APIError) {
-
 	config := p.getConfiguration()
 	discoveryUrl := "https://lyncdiscover." + config.Domain
-	discoveryRequest, err := http.NewRequest("GET", discoveryUrl, nil)
-	if err != nil {
-		return nil, &APIError{
-			Message: err.Error(),
-		}
-	}
 
-	discoveryResponse, err := p.getClient().Do(discoveryRequest)
-	if err != nil {
-		return nil, &APIError{
-			Message: err.Error(),
-		}
-	}
-
-	discoveryResponseBytes, err := ioutil.ReadAll(discoveryResponse.Body)
-	if err != nil {
-		return nil, &APIError{
-			Message: err.Error(),
-		}
-	}
-	discoveryResponseBody := &DiscoveryResponse{}
-	err = json.Unmarshal(discoveryResponseBytes, discoveryResponseBody)
-	if err != nil {
-		return nil, &APIError{
-			Message: err.Error(),
-		}
-	}
-
-	applicationState, apiError := p.getApplicationState(discoveryResponseBody.Links.User.Href)
+	applicationState, apiError := p.getApplicationState(discoveryUrl)
 	if apiError != nil {
 		return nil, apiError
 	}
 
-	applicationsResourceRequestBody, _ := json.Marshal(NewApplicationRequest{
-		UserAgent:  NEW_APPLICATION_USER_AGENT,
-		Culture:    NEW_APPLICATION_CULTURE,
-		EndpointId: "123",
-	})
-
-	applicationsResourceRequest, err := http.NewRequest("POST", applicationState.ApplicationsUrl, bytes.NewBuffer([]byte(applicationsResourceRequestBody)))
+	newApplicationResponse, err := p.client.createNewApplication(
+		applicationState.ApplicationsUrl,
+		NewApplicationRequest{
+			UserAgent:  NEW_APPLICATION_USER_AGENT,
+			Culture:    NEW_APPLICATION_CULTURE,
+			EndpointId: "123",
+		},
+		applicationState.Token,
+	)
 	if err != nil {
-		return nil, &APIError{
-			Message: err.Error(),
-		}
+		return nil, &APIError{Message: err.Error()}
 	}
 
-	applicationsResourceRequest.Header.Set("Authorization", "Bearer "+applicationState.Token)
-	applicationsResourceRequest.Header.Set("Accept", "application/json")
-	applicationsResourceRequest.Header.Set("Content-Type", "application/json")
-
-	applicationsResourceResponse, err := p.getClient().Do(applicationsResourceRequest)
-	if err != nil {
-		return nil, &APIError{
-			Message: err.Error(),
-		}
-	}
-
-	applicationsResourceResponseBody := &NewApplicationResponse{}
-	applicationsResourceResponseBytes, err := ioutil.ReadAll(applicationsResourceResponse.Body)
-	if err != nil {
-		return nil, &APIError{
-			Message: err.Error(),
-		}
-	}
-
-	err = json.Unmarshal(applicationsResourceResponseBytes, applicationsResourceResponseBody)
-	if err != nil {
-		return nil, &APIError{
-			Message: err.Error(),
-		}
-	}
-
-	applicationState.OnlineMeetingsUrl = "https://" + applicationState.Resource + "/" + applicationsResourceResponseBody.Embedded.OnlineMeetings.OnlineMeetingsLinks.MyOnlineMeetings.Href
+	applicationState.OnlineMeetingsUrl = "https://" + applicationState.Resource + "/" + newApplicationResponse.Embedded.OnlineMeetings.OnlineMeetingsLinks.MyOnlineMeetings.Href
 
 	return applicationState, nil
 }
 
-func (p *Plugin) getApplicationState(userResourceUrl string) (*ApplicationState, *APIError) {
+func (p *Plugin) getApplicationState(discoveryUrl string) (*ApplicationState, *APIError) {
 	config := p.getConfiguration()
 
+	DiscoveryResponse, err := p.client.performDiscovery(discoveryUrl)
+	if err != nil {
+		return nil, &APIError{Message: err.Error()}
+	}
+
+	userResourceUrl := DiscoveryResponse.Links.User.Href
 	resourceRegex := regexp.MustCompile(`https:\/\/(.*)\/Autodiscover\/`)
 	resourceRegexMatch := resourceRegex.FindStringSubmatch(userResourceUrl)
 	resourceName := resourceRegexMatch[1]
-
 	tokenUrl := "https://lyncweb." + config.Domain + "/webticket/oauthtoken"
-	authResponse, err := p.getClient().PostForm(tokenUrl,
-		url.Values{
-			"grant_type": {"password"},
-			"username":   {config.Username},
-			"password":   {config.Password},
-			"resource":   {resourceName},
-		})
+
+	authResponse, err := p.client.authenticate(tokenUrl, url.Values{
+		"grant_type": {"password"},
+		"username":   {config.Username},
+		"password":   {config.Password},
+		"resource":   {resourceName},
+	})
 	if err != nil {
-		return nil, &APIError{
-			Message: err.Error(),
-		}
+		return nil, &APIError{Message: err.Error()}
 	}
 
-	authResponseBytes, err := ioutil.ReadAll(authResponse.Body)
+	userResourceResponse, err := p.client.readUserResource(userResourceUrl, authResponse.Access_token)
 	if err != nil {
-		return nil, &APIError{
-			Message: err.Error(),
-		}
+		return nil, &APIError{Message: err.Error()}
 	}
 
-	authResponseBody := &AuthResponse{}
-	err = json.Unmarshal(authResponseBytes, authResponseBody)
-	if err != nil {
-		return nil, &APIError{
-			Message: err.Error(),
-		}
-	}
-
-	Token := authResponseBody.Access_token
-
-	userResourceRequest, err := http.NewRequest("GET", userResourceUrl, nil)
-	if err != nil {
-		return nil, &APIError{
-			Message: err.Error(),
-		}
-	}
-
-	userResourceRequest.Header.Set("Authorization", "Bearer "+Token)
-	userResourceRequest.Header.Set("Accept", "application/json")
-	userResourceRequest.Header.Set("Content-Type", "application/json")
-
-	userResourceResponse, err := p.getClient().Do(userResourceRequest)
-	if err != nil {
-		return nil, &APIError{
-			Message: err.Error(),
-		}
-	}
-
-	userResourceResponseBytes, err := ioutil.ReadAll(userResourceResponse.Body)
-	if err != nil {
-		return nil, &APIError{
-			Message: err.Error(),
-		}
-	}
-
-	userResourceResponseBody := &UserResourceResponse{}
-	err = json.Unmarshal(userResourceResponseBytes, userResourceResponseBody)
-	if err != nil {
-		return nil, &APIError{
-			Message: err.Error(),
-		}
-	}
-
-	if userResourceResponseBody.Links.Applications.Href != "" {
+	if userResourceResponse.Links.Applications.Href != "" {
 		return &ApplicationState{
-			ApplicationsUrl: userResourceResponseBody.Links.Applications.Href,
+			ApplicationsUrl: userResourceResponse.Links.Applications.Href,
 			Resource:        resourceName,
-			Token:           Token,
+			Token:           authResponse.Access_token,
 		}, nil
-	} else if userResourceResponseBody.Links.Redirect.Href != "" {
-		return p.getApplicationState(userResourceResponseBody.Links.Redirect.Href)
+	} else if userResourceResponse.Links.Redirect.Href != "" {
+		return p.getApplicationState(userResourceResponse.Links.Redirect.Href)
 	} else {
 		return nil, &APIError{
 			Message: "Unexpected error during creating an application",
 		}
 	}
-}
-
-func (p *Plugin) getClient() *http.Client {
-	var transCfg = &http.Transport{
-		TLSClientConfig: &tls.Config{InsecureSkipVerify: true},
-	}
-	return &http.Client{Transport: transCfg}
 }

@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"net/http"
 	"net/http/httptest"
+	"net/url"
 	"strings"
 	"testing"
 
@@ -22,10 +23,10 @@ func TestPlugin(t *testing.T) {
 	validClientIdRequest := httptest.NewRequest("GET", "/api/v1/client_id", nil)
 	validClientIdRequest.Header.Add("Mattermost-User-Id", "theuserid")
 
-	noAuthMeetingRequest := httptest.NewRequest("POST", "/api/v1/register_meeting_from_online_version", strings.NewReader("{\"channel_id\": \"thechannelid\"}"))
+	validIsServerVersionReqeust := httptest.NewRequest("GET", "/api/v1/is_server_version", nil)
+	validIsServerVersionReqeust.Header.Add("Mattermost-User-Id", "theuserid")
 
-	personalMeetingRequest := httptest.NewRequest("POST", "/api/v1/register_meeting_from_online_version", strings.NewReader("{\"channel_id\": \"thechannelid\", \"meeting_id\": \"L30IC51J\", \"personal\": true}"))
-	personalMeetingRequest.Header.Add("Mattermost-User-Id", "theuserid")
+	noAuthMeetingRequest := httptest.NewRequest("POST", "/api/v1/register_meeting_from_online_version", strings.NewReader("{\"channel_id\": \"thechannelid\"}"))
 
 	for name, tc := range map[string]struct {
 		Request            *http.Request
@@ -35,6 +36,18 @@ func TestPlugin(t *testing.T) {
 		"UnauthorizedMeetingRequest": {
 			Request:            noAuthMeetingRequest,
 			ExpectedStatusCode: http.StatusUnauthorized,
+		},
+		"ValidMeetingRequest": {
+			Request:            validMeetingRequest,
+			ExpectedStatusCode: http.StatusOK,
+		},
+		"ValidClientIdRequest": {
+			Request:            validClientIdRequest,
+			ExpectedStatusCode: http.StatusOK,
+		},
+		"ValidIsServerVersionReqeust": {
+			Request:            validIsServerVersionReqeust,
+			ExpectedStatusCode: http.StatusOK,
 		},
 	} {
 		t.Run(name, func(t *testing.T) {
@@ -46,9 +59,7 @@ func TestPlugin(t *testing.T) {
 			}, (*model.AppError)(nil))
 
 			api.On("GetChannelMember", "thechannelid", "theuserid").Return(&model.ChannelMember{}, (*model.AppError)(nil))
-
 			api.On("CreatePost", mock.AnythingOfType("*model.Post")).Return(&model.Post{}, (*model.AppError)(nil))
-			api.On("UpdatePost", mock.AnythingOfType("*model.Post")).Return(&model.Post{}, (*model.AppError)(nil))
 			api.On("KVSet", fmt.Sprintf("%v%v", POST_MEETING_KEY, "L30IC51J"), mock.AnythingOfType("[]uint8")).Return((*model.AppError)(nil))
 
 			p := Plugin{}
@@ -63,5 +74,124 @@ func TestPlugin(t *testing.T) {
 			p.ServeHTTP(&plugin.Context{}, w, tc.Request)
 			assert.Equal(t, tc.ExpectedStatusCode, w.Result().StatusCode)
 		})
+	}
+
+	t.Run("create_meeting_in_server_version", func(t *testing.T) {
+
+		givenDomainUrl := "domain.test"
+		expectedDiscoveryUrl := "https://lyncdiscover.domain.test"
+		expectedUserResourceUrl := "https://win-123.domain.test/Autodiscover/AutodiscoverService.svc/root/oauth/user"
+		expectedApplicationsUrl := "https://win-123.domain.test/ucwa/oauth/v1/applications"
+		expectedMeetingsUrl := "/ucwa/oauth/v1/applications/432/onlineMeetings/myOnlineMeetings"
+		expectedToken := "123"
+		expectedMeetingId := "BR140MRA"
+
+		api := &plugintest.API{}
+		api.On("GetUser", "theuserid").Return(&model.User{
+			Id:    "theuserid",
+			Email: "theuseremail",
+		}, (*model.AppError)(nil))
+		api.On("GetChannelMember", "thechannelid", "theuserid").Return(&model.ChannelMember{}, (*model.AppError)(nil))
+		api.On("CreatePost", mock.AnythingOfType("*model.Post")).Return(&model.Post{}, (*model.AppError)(nil))
+		api.On("KVSet", fmt.Sprintf("%v%v", POST_MEETING_KEY, expectedMeetingId), mock.AnythingOfType("[]uint8")).Return((*model.AppError)(nil))
+
+		clientMock := &ClientMock{}
+		clientMock.On("performDiscovery", expectedDiscoveryUrl).Return(&DiscoveryResponse{
+			Links: Links{
+				User: Href{Href: expectedUserResourceUrl},
+			},
+		}, nil)
+		clientMock.On("authenticate", mock.Anything, mock.Anything).Return(&AuthResponse{
+			Access_token: expectedToken,
+		}, nil)
+		clientMock.On("readUserResource", expectedUserResourceUrl, mock.Anything).Return(&UserResourceResponse{
+			Links: Links{
+				Applications: Href{Href: expectedApplicationsUrl},
+				Redirect:     Href{},
+			},
+		}, nil)
+		clientMock.On("createNewApplication", expectedApplicationsUrl, mock.Anything, expectedToken).Return(&NewApplicationResponse{
+			Embedded: Embedded{
+				OnlineMeetings: OnlineMeetings{
+					OnlineMeetingsLinks: OnlineMeetingsLinks{
+						MyOnlineMeetings: Href{Href: expectedMeetingsUrl},
+					},
+				},
+			},
+		}, nil)
+		clientMock.On("createNewMeeting", mock.Anything, mock.Anything, mock.Anything).Return(&NewMeetingResponse{
+			MeetingId: expectedMeetingId,
+		}, nil)
+
+		p := Plugin{client: clientMock}
+		p.setConfiguration(&configuration{
+			Domain:          givenDomainUrl,
+			Username:        "username",
+			Password:        "password",
+			IsServerVersion: true,
+		})
+		p.SetAPI(api)
+		err := p.OnActivate()
+		assert.Nil(t, err)
+
+		r := httptest.NewRequest("POST", "/api/v1/create_meeting_in_server_version", strings.NewReader("{\"channel_id\": \"thechannelid\", \"personal\": true}"))
+		r.Header.Add("Mattermost-User-Id", "theuserid")
+		w := httptest.NewRecorder()
+		p.ServeHTTP(&plugin.Context{}, w, r)
+		assert.Equal(t, http.StatusOK, w.Result().StatusCode)
+	})
+}
+
+type ClientMock struct {
+	mock.Mock
+}
+
+func (c *ClientMock) authenticate(url string, body url.Values) (*AuthResponse, error) {
+	ret := c.Called(url, body)
+
+	if ret.Get(0) != nil && ret.Get(1) == nil {
+		return ret.Get(0).(*AuthResponse), nil
+	} else {
+		return nil, ret.Error(1)
+	}
+}
+
+func (c *ClientMock) createNewApplication(url string, body interface{}, token string) (*NewApplicationResponse, error) {
+	ret := c.Called(url, body, token)
+
+	if ret.Get(0) != nil && ret.Get(1) == nil {
+		return ret.Get(0).(*NewApplicationResponse), nil
+	} else {
+		return nil, ret.Error(1)
+	}
+}
+
+func (c *ClientMock) createNewMeeting(url string, body interface{}, token string) (*NewMeetingResponse, error) {
+	ret := c.Called(url, body, token)
+
+	if ret.Get(0) != nil && ret.Get(1) == nil {
+		return ret.Get(0).(*NewMeetingResponse), nil
+	} else {
+		return nil, ret.Error(1)
+	}
+}
+
+func (c *ClientMock) performDiscovery(url string) (*DiscoveryResponse, error) {
+	ret := c.Called(url)
+
+	if ret.Get(0) != nil && ret.Get(1) == nil {
+		return ret.Get(0).(*DiscoveryResponse), nil
+	} else {
+		return nil, ret.Error(1)
+	}
+}
+
+func (c *ClientMock) readUserResource(url string, token string) (*UserResourceResponse, error) {
+	ret := c.Called(url, token)
+
+	if ret.Get(0) != nil && ret.Get(1) == nil {
+		return ret.Get(0).(*UserResourceResponse), nil
+	} else {
+		return nil, ret.Error(1)
 	}
 }
