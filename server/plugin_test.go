@@ -23,8 +23,29 @@ func TestPlugin(t *testing.T) {
 	validClientIdRequest := httptest.NewRequest("GET", "/api/v1/client_id", nil)
 	validClientIdRequest.Header.Add("Mattermost-User-Id", "theuserid")
 
+	noAuthClientIdRequest := httptest.NewRequest("GET", "/api/v1/client_id", nil)
+
 	validIsServerVersionReqeust := httptest.NewRequest("GET", "/api/v1/is_server_version", nil)
 	validIsServerVersionReqeust.Header.Add("Mattermost-User-Id", "theuserid")
+
+	noAuthIsServerVersionReqeust := httptest.NewRequest("GET", "/api/v1/is_server_version", nil)
+
+	validAuthorizeInADDRequest := httptest.NewRequest("GET", "/api/v1/auth?mattermost_user_id=theuserid&navigateTo=https%3A%2F%2Fwww.test.com%2F%3Fresponse_type%3Did_token%26state%3D123", nil)
+
+	invalidAuthorizeInADDRequest1 := httptest.NewRequest("GET", "/api/v1/auth?navigateTo=https%3A%2F%2Fwww.test.com%2F%3Fresponse_type%3Did_token%26state%3D123", nil)
+	invalidAuthorizeInADDRequest2 := httptest.NewRequest("GET", "/api/v1/auth?mattermost_user_id=theuserid", nil)
+	invalidAuthorizeInADDRequest3 := httptest.NewRequest("GET", "/api/v1/auth?mattermost_user_id=theuserid&navigateTo=https%3A%2F%2Fwww.test.com%2F%3Fresponse_type%3Did_token", nil)
+
+	validCompleteAuthorizeInAddRequest := httptest.NewRequest("POST", "/api/v1/auth_redirect", strings.NewReader("id_token=321&state=123"))
+	validCompleteAuthorizeInAddRequest.Header.Set("Content-Type", "application/x-www-form-urlencoded")
+
+	invalidCompleteAuthorizeInAddRequest1 := httptest.NewRequest("POST", "/api/v1/auth_redirect", strings.NewReader("id_token=321"))
+	invalidCompleteAuthorizeInAddRequest1.Header.Set("Content-Type", "application/x-www-form-urlencoded")
+
+	invalidCompleteAuthorizeInAddRequest2 := httptest.NewRequest("POST", "/api/v1/auth_redirect", strings.NewReader("state=123"))
+	invalidCompleteAuthorizeInAddRequest2.Header.Set("Content-Type", "application/x-www-form-urlencoded")
+
+	invalidCompleteAuthorizeInAddRequest3 := httptest.NewRequest("POST", "/api/v1/auth_redirect", strings.NewReader("state=123"))
 
 	noAuthMeetingRequest := httptest.NewRequest("POST", "/api/v1/register_meeting_from_online_version", strings.NewReader("{\"channel_id\": \"thechannelid\"}"))
 
@@ -45,9 +66,49 @@ func TestPlugin(t *testing.T) {
 			Request:            validClientIdRequest,
 			ExpectedStatusCode: http.StatusOK,
 		},
+		"UnauthorizedClientIdRequest": {
+			Request:            noAuthClientIdRequest,
+			ExpectedStatusCode: http.StatusUnauthorized,
+		},
 		"ValidIsServerVersionReqeust": {
 			Request:            validIsServerVersionReqeust,
 			ExpectedStatusCode: http.StatusOK,
+		},
+		"UnauthorizedIsServerVersionRequest": {
+			Request:            noAuthIsServerVersionReqeust,
+			ExpectedStatusCode: http.StatusUnauthorized,
+		},
+		"ValidAuthorizeInADDRequest": {
+			Request:            validAuthorizeInADDRequest,
+			ExpectedStatusCode: http.StatusFound,
+		},
+		"InvalidAuthorizeInADDRequest1": {
+			Request:            invalidAuthorizeInADDRequest1,
+			ExpectedStatusCode: http.StatusUnauthorized,
+		},
+		"InvalidAuthorizeInADDRequest2": {
+			Request:            invalidAuthorizeInADDRequest2,
+			ExpectedStatusCode: http.StatusBadRequest,
+		},
+		"InvalidAuthorizeInADDRequest3": {
+			Request:            invalidAuthorizeInADDRequest3,
+			ExpectedStatusCode: http.StatusBadRequest,
+		},
+		"ValidCompleteAuthorizeInAddRequest": {
+			Request:            validCompleteAuthorizeInAddRequest,
+			ExpectedStatusCode: http.StatusOK,
+		},
+		"InvalidCompleteAuthorizeInAddRequest1": {
+			Request:            invalidCompleteAuthorizeInAddRequest1,
+			ExpectedStatusCode: http.StatusBadRequest,
+		},
+		"InvalidCompleteAuthorizeInAddRequest2": {
+			Request:            invalidCompleteAuthorizeInAddRequest2,
+			ExpectedStatusCode: http.StatusBadRequest,
+		},
+		"InvalidCompleteAuthorizeInAddRequest3": {
+			Request:            invalidCompleteAuthorizeInAddRequest3,
+			ExpectedStatusCode: http.StatusBadRequest,
 		},
 	} {
 		t.Run(name, func(t *testing.T) {
@@ -61,6 +122,10 @@ func TestPlugin(t *testing.T) {
 			api.On("GetChannelMember", "thechannelid", "theuserid").Return(&model.ChannelMember{}, (*model.AppError)(nil))
 			api.On("CreatePost", mock.AnythingOfType("*model.Post")).Return(&model.Post{}, (*model.AppError)(nil))
 			api.On("KVSet", fmt.Sprintf("%v%v", POST_MEETING_KEY, "L30IC51J"), mock.AnythingOfType("[]uint8")).Return((*model.AppError)(nil))
+			api.On("KVSet", "123", []byte("theuserid")).Return((*model.AppError)(nil))
+			api.On("KVGet", "123").Return([]byte("theuserid"), (*model.AppError)(nil))
+			api.On("KVDelete", "123").Return((*model.AppError)(nil))
+			api.On("PublishWebSocketEvent", "authenticated", mock.Anything, mock.Anything).Return()
 
 			p := Plugin{}
 			p.setConfiguration(&configuration{
