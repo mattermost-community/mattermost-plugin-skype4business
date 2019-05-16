@@ -1,6 +1,16 @@
-# mattermost-plugin-skype4business
+# Mattermost Skype for Business Plugin
 
-This plugin will add UI for users to start new Skype for Business meetings in a Mattermost channel. Posts are created when a meeting starts and edited when a meeting ends.
+Start and join voice calls, video calls and use screen sharing with your team members with a Skype for Business plugin for Mattermost.
+
+*//TODO screenshot*
+
+Clicking a video icon in a Mattermost channel posts a message that invites team members to join a Skype for Business meetings call.
+
+*//TODO screenshot*
+    
+When the call ends, the Mattermost message is updated accordingly.
+
+*//TODO screenshot*
 
 ## Installation
 
@@ -41,19 +51,18 @@ This plugin will add UI for users to start new Skype for Business meetings in a 
 ### Skype for Business Server
 
 1. Install the plugin
-    1. Clone the project from GitHub onto your local computer and build it
-    2. In Mattermost, go the System Console -> Plugins -> Management
+    1. Download the latest version of the plugin from the GitHub releases page
+    2. In Mattermost, go to **System Console -> Plugins -> Management**
     3. Upload the plugin
-2. Create a bot account in your domain.
-3. Fill the "Bot username" and "Bot password" fields with the bot's account credentials.
-    1. Set "Is Server version?" to true
-    2. Fill the "Domain" field with the domain where your Skype for Business Server is running, e.g. contoso.com.
-4. Enable the plugin
-    1. Go to System Console -> Plugins -> Management and click "Enable" underneath the Skype For Business plugin
-5. Try it out
-    1. Click the Skype for Business icon in the channel header
-    2. New post will be created with a link to the newly created meeting
-    3. By clicking the "Join meeting" button, you will be redirected to a meet.<YOUR DOMAIN> page, which in turn will open a Skype for Business client installed on your computer / smartphone to join the meeting
+2. Go to **System Console -> Plugins -> Skype for Business**
+3. Choose ``Server`` as the **Skype for Business Product Type**.
+4. Enter the **Server Domain** of your Skype for Business server instance. For example, contoso.com.
+5. Enable the plugin
+    1. Go to **System Console -> Plugins -> Management** and click **Enable** underneath the Skype for Business plugin.
+6. Try it out
+    1. Go to a Mattermost channel and click the Skype for Business icon in the channel header.
+    2. Observe a new message posted to the channel, with a link to the newly created meeting.
+    3. By clicking the "Join meeting" button, you will be redirected to a meet.<YOUR DOMAIN> page, which in turn opens a Skype for Business client installed on your computer or smartphone to join the meeting.
 
 ## Developing
 
