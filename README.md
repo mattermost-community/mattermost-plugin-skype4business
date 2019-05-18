@@ -2,16 +2,10 @@
 
 Start and join voice calls, video calls and use screen sharing with your team members with a Skype for Business plugin for Mattermost.
 
-*//TODO screenshot*
-
 Clicking a video icon in a Mattermost channel posts a message that invites team members to join a Skype for Business meetings call.
 
-*//TODO screenshot*
-    
-When the call ends, the Mattermost message is updated accordingly.
-
-*//TODO screenshot*
-
+![image](https://user-images.githubusercontent.com/13119842/57962243-a8b6b900-78e2-11e9-858c-bff0b141f58c.png)
+ 
 ## Installation
 
 ### Skype for Business Online
