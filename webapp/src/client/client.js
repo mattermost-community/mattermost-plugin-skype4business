@@ -138,7 +138,7 @@ export default class Client {
         try {
             isServerVersion = await this.isServerVersion();
         } catch (error) {
-            throw new Error('Cannot connect with the server. Please try later.');
+            throw new Error('Cannot connect with the server. Please try again later.');
         }
 
         try {
@@ -149,9 +149,9 @@ export default class Client {
             }
         } catch (error) {
             if (isServerVersion) {
-                throw new Error('An error occurred during creating the meeting. Please try later.');
+                throw new Error('An error occurred when creating the meeting. Please try again later.');
             } else {
-                throw new Error('An error occurred during creating the meeting. Make sure your browser doesn\'t block pop-ups on this website. Otherwise please try later.');
+                throw new Error('An error occurred when creating the meeting. Make sure your browser doesn\'t block pop-ups on this website, then try again.');
             }
         }
     };
