@@ -10,12 +10,17 @@ import (
 	"github.com/pkg/errors"
 )
 
+const (
+	PRODUCT_TYPE_SERVER = "server"
+	PRODUCT_TYPE_ONLINE = "online"
+)
+
 type configuration struct {
-	IsServerVersion bool
-	ClientId        string
-	Username        string
-	Password        string
-	Domain          string
+	ProductType string
+	ClientId    string
+	Username    string
+	Password    string
+	Domain      string
 }
 
 func (c *configuration) Clone() *configuration {
@@ -25,7 +30,11 @@ func (c *configuration) Clone() *configuration {
 
 func (c *configuration) IsValid() error {
 
-	if c.IsServerVersion {
+	if c.ProductType != PRODUCT_TYPE_ONLINE && c.ProductType != PRODUCT_TYPE_SERVER {
+		return fmt.Errorf("Product Type is not configured")
+	}
+
+	if c.ProductType == PRODUCT_TYPE_SERVER {
 		if c.Username == "" {
 			return fmt.Errorf("Username is not configured.")
 		}

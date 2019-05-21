@@ -17,8 +17,8 @@ type ClientIdResponse struct {
 	ClientId string `json:"client_id"`
 }
 
-type IsServerVersionResponse struct {
-	IsServerVersion string `json:"is_server_version"`
+type ProductTypeResponse struct {
+	ProductType string `json:"product_type"`
 }
 
 type State struct {

@@ -25,10 +25,10 @@ func TestPlugin(t *testing.T) {
 
 	noAuthClientIdRequest := httptest.NewRequest("GET", "/api/v1/client_id", nil)
 
-	validIsServerVersionReqeust := httptest.NewRequest("GET", "/api/v1/is_server_version", nil)
-	validIsServerVersionReqeust.Header.Add("Mattermost-User-Id", "theuserid")
+	validProductTypeReqeust := httptest.NewRequest("GET", "/api/v1/product_type", nil)
+	validProductTypeReqeust.Header.Add("Mattermost-User-Id", "theuserid")
 
-	noAuthIsServerVersionReqeust := httptest.NewRequest("GET", "/api/v1/is_server_version", nil)
+	noAuthProductTypeReqeust := httptest.NewRequest("GET", "/api/v1/product_type", nil)
 
 	validAuthorizeInADDRequest := httptest.NewRequest("GET", "/api/v1/auth?mattermost_user_id=theuserid&navigateTo=https%3A%2F%2Fwww.test.com%2F%3Fresponse_type%3Did_token%26state%3D123", nil)
 
@@ -70,12 +70,12 @@ func TestPlugin(t *testing.T) {
 			Request:            noAuthClientIdRequest,
 			ExpectedStatusCode: http.StatusUnauthorized,
 		},
-		"ValidIsServerVersionReqeust": {
-			Request:            validIsServerVersionReqeust,
+		"ValidProductTypeReqeust": {
+			Request:            validProductTypeReqeust,
 			ExpectedStatusCode: http.StatusOK,
 		},
-		"UnauthorizedIsServerVersionRequest": {
-			Request:            noAuthIsServerVersionReqeust,
+		"UnauthorizedProductTypeRequest": {
+			Request:            noAuthProductTypeReqeust,
 			ExpectedStatusCode: http.StatusUnauthorized,
 		},
 		"ValidAuthorizeInADDRequest": {
@@ -129,7 +129,8 @@ func TestPlugin(t *testing.T) {
 
 			p := Plugin{}
 			p.setConfiguration(&configuration{
-				ClientId: "123123123",
+				ClientId:    "123123123",
+				ProductType: PRODUCT_TYPE_ONLINE,
 			})
 			p.SetAPI(api)
 			err := p.OnActivate()
@@ -190,10 +191,10 @@ func TestPlugin(t *testing.T) {
 
 		p := Plugin{client: clientMock}
 		p.setConfiguration(&configuration{
-			Domain:          givenDomainUrl,
-			Username:        "username",
-			Password:        "password",
-			IsServerVersion: true,
+			Domain:      givenDomainUrl,
+			Username:    "username",
+			Password:    "password",
+			ProductType: PRODUCT_TYPE_SERVER,
 		})
 		p.SetAPI(api)
 		err := p.OnActivate()

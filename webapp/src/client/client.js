@@ -127,7 +127,7 @@ export default class Client {
         this.registerMeetingFromOnlineVersionUrl = '/plugins/skype4business/api/v1/register_meeting_from_online_version';
         this.clientIdUrl = '/plugins/skype4business/api/v1/client_id';
         this.createMeetingInServerVersionUrl = '/plugins/skype4business/api/v1/create_meeting_in_server_version';
-        this.isServerVersionUrl = '/plugins/skype4business/api/v1/is_server_version';
+        this.productTypeUrl = '/plugins/skype4business/api/v1/product_type';
         this.authUrl = '/plugins/skype4business/api/v1/auth';
         this.redirectUrl = '/plugins/skype4business/api/v1/auth_redirect';
     }
@@ -357,9 +357,9 @@ export default class Client {
 
     isServerVersion = async () => {
         const response = await request.
-            get(this.isServerVersionUrl).
+            get(this.productTypeUrl).
             set('Accept', 'application/json');
 
-        return response.body.is_server_version === 'Y';
+        return response.body.product_type === 'server';
     };
 }

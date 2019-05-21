@@ -16,17 +16,17 @@
   "settings_schema": {
     "settings": [
       {
-        "key": "isServerVersion",
+        "key": "productType",
         "display_name": "Skype for Business Product Type",
         "type": "radio",
         "help_text": "The product type of your Skype for Business instance.",
         "default": "Server",
         "options": [{
             "display_name": "Server",
-            "value": "Server"
+            "value": "server"
         }, {
             "display_name": "Online",
-            "value": "Online:"             
+            "value": "online"
         }]
       },
       {
@@ -52,7 +52,7 @@
         "display_name": "Application ID",
         "type": "text",
         "help_text": "Application ID from the Azure Active Directory. Only required for Skype for Business Online.\n\nUse this URL to configure the plugin in Azure Active Directory: ```https://SITEURL/plugins/skype4business/api/v1/auth_redirect```"
-      },
+      }
     ],
     "footer": "To report an issue, make a suggestion or a contribution, [check the repository](https://github.com/kosgrz/mattermost-plugin-skype4business)."
   }

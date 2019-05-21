@@ -64,8 +64,8 @@ func (p *Plugin) ServeHTTP(c *plugin.Context, w http.ResponseWriter, r *http.Req
 
 	path := r.URL.Path
 	switch path {
-	case "/api/v1/is_server_version":
-		p.handleIsServerVersion(w, r)
+	case "/api/v1/product_type":
+		p.handleProductType(w, r)
 	case "/api/v1/create_meeting_in_server_version":
 		p.handleCreateMeetingInServerVersion(w, r)
 	case "/api/v1/client_id":
@@ -206,7 +206,7 @@ func (p *Plugin) handleClientId(w http.ResponseWriter, r *http.Request) {
 	return
 }
 
-func (p *Plugin) handleIsServerVersion(w http.ResponseWriter, r *http.Request) {
+func (p *Plugin) handleProductType(w http.ResponseWriter, r *http.Request) {
 
 	userId := r.Header.Get("Mattermost-User-Id")
 	if userId == "" {
@@ -222,14 +222,9 @@ func (p *Plugin) handleIsServerVersion(w http.ResponseWriter, r *http.Request) {
 
 	w.Header().Set("Content-Type", "application/json")
 
-	var response IsServerVersionResponse
-	if p.getConfiguration().IsServerVersion {
-		response.IsServerVersion = "Y"
-	} else {
-		response.IsServerVersion = "N"
-	}
-
-	if err := json.NewEncoder(w).Encode(&response); err != nil {
+	if err := json.NewEncoder(w).Encode(ProductTypeResponse{
+		ProductType: p.getConfiguration().ProductType,
+	}); err != nil {
 		fmt.Println(err.Error())
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 	}
@@ -262,7 +257,7 @@ func (p *Plugin) handleRegisterMeetingFromOnlineVersion(w http.ResponseWriter, r
 		fmt.Println("Cannot fetch configuration")
 		http.Error(w, "Forbidden", http.StatusForbidden)
 		return
-	} else if config.IsServerVersion {
+	} else if config.ProductType == PRODUCT_TYPE_SERVER {
 		fmt.Println("Server version is set")
 		http.Error(w, "Forbidden", http.StatusForbidden)
 		return
@@ -317,7 +312,7 @@ func (p *Plugin) handleRegisterMeetingFromOnlineVersion(w http.ResponseWriter, r
 
 func (p *Plugin) handleCreateMeetingInServerVersion(w http.ResponseWriter, r *http.Request) {
 	config := p.getConfiguration()
-	if !config.IsServerVersion {
+	if config.ProductType == PRODUCT_TYPE_ONLINE {
 		http.Error(w, "Forbidden", http.StatusForbidden)
 		return
 	}
