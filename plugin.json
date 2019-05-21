@@ -33,7 +33,7 @@
         "key": "Username",
         "display_name": "Bot username",
         "type": "text",
-        "help_text": "Username of your selected bot account. Only required for Skype for Business Server."
+        "help_text": "Username of your selected bot account. We strongly recommend using a dedicated bot account for this plugin, rather than an existing user account. Only required for Skype for Business Server."
       },
       {
         "key": "Password",
