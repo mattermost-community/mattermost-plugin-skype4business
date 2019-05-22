@@ -20,7 +20,7 @@ Clicking a video icon in a Mattermost channel posts a message that invites team 
     3. Set the following values:
        - **Name**: Mattermost Skype for Business Plugin - [your company name]
        - **Supoorted account types**: Accounts in any organizational directory and personal Microsoft accounts (e.g. Skype, Xbox, Outlook.com)
-       - **Redirect URI (optional)**: Web, then enter "https://your-mattermost-url.com/plugins/skype4business/api/v1/auth_redirect/" replacing `https://your-mattermost-url.com` with your Mattermost URL
+       - **Redirect URI (optional)**: Web, then enter "https://your-mattermost-url.com/plugins/skype4business/api/v1/auth_redirect" replacing `https://your-mattermost-url.com` with your Mattermost URL
     4. Click **Register** to submit
 3. Grant permissions for your application in Azure Active Directory
     1. Select **API permissions** in the application sidebar menu, then **Add a permision -> Skype for Business -> Delegated permissions**
