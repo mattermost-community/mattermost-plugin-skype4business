@@ -55,7 +55,9 @@ Clicking a video icon in a Mattermost channel posts a message that invites team 
     1. Go to **System Console -> Plugins -> Skype for Business**
     2. Choose ``Server`` as the **Skype for Business Product Type**
     3. Enter the **Server Domain** of your Skype for Business server instance. For example, ``contoso.com.``
-    4. Click **Save**
+    4. Enter the **Bot Username** of your bot user created in the Skype for Business domain. For example, bot@contoso.com. We strongly recommend using a dedicated bot account for this plugin, rather than an existing user account.
+    5. Enter the **Bot Username** of your bot user created in the Skype for Business domain.
+    6. Click **Save**
 3. Enable the plugin
     1. Go to **System Console -> Plugins -> Management** and click **Enable** underneath the Skype for Business plugin
 4. Try it out
