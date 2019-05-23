@@ -1,59 +1,69 @@
-# mattermost-plugin-skype4business
+# Mattermost Skype for Business Plugin
 
-This plugin will add UI for users to start new Skype for Business meetings in a Mattermost channel. Posts are created when a meeting starts and edited when a meeting ends.
+Start and join voice calls, video calls and use screen sharing with your team members with a Skype for Business plugin for Mattermost.
 
+Clicking a video icon in a Mattermost channel posts a message that invites team members to join a Skype for Business meetings call.
+
+![image](https://user-images.githubusercontent.com/13119842/57962243-a8b6b900-78e2-11e9-858c-bff0b141f58c.png)
+ 
 ## Installation
 
 ### Skype for Business Online
 
 1. Install the plugin
-    1. Clone the project from GitHub onto your local computer and build it
-    2. In Mattermost, go the System Console -> Plugins -> Management
+    1. Download the latest version of the plugin from the GitHub releases page
+    2. In Mattermost, go to **System Console -> Plugins -> Management**
     3. Upload the plugin
 2. Register an Azure Active Directory app
-    1. Go to https://portal.azure.com/#home
-    2. Click Azure Active Directory -> App registrations -> New application registration
-    3. Use `Mattermost Skype for Business Plugin - <your company name>` as the name
-    4. Set `Accounts in any organizational directory and personal Microsoft accounts (e.g. Skype, Xbox, Outlook.com)` in `Supported account types`
-    5. Under `Redirect URI (optional)` set `Web` and put "https://your-mattermost-url.com/plugins/skype4business/api/v1/popup/" replacing `https://your-mattermost-url.com` with your Mattermost URL and save
-    6. Click the "Register" button to submit
-3. Grant permissions for your new app
-    1. Go to API permissions -> Add a permision -> Skype for Business -> Delegated permissions
-    2. Check `Meetings.ReadWrite`
-    3. Click "Add permissions" to submit
-    4. Click "Grant admin consent for ..." and confirm
-4. Allow implicit flow
-    1. Click the "Manifest" button under the app name
-    2. Set the "oauth2AllowImplicitFlow" and "oauth2AllowIdTokenImplicitFlow" values to true
-5. Copy the "Application ID" in the "Overview" section
-    1. In Mattermost, go to System Console -> Plugins -> Skype for Business
-    2. Fill in the Client ID using the copied "Application ID" and save the settings.
-    3. Set "Is server version?" to false
+    1. Sign in to https://portal.azure.com/#home
+    2. On the left-hand sidebar, select **Azure Active Directory**, then navigate to **App registrations -> New application registration**
+    3. Set the following values:
+       - **Name**: Mattermost Skype for Business Plugin - [your company name]
+       - **Supoorted account types**: Accounts in any organizational directory and personal Microsoft accounts (e.g. Skype, Xbox, Outlook.com)
+       - **Redirect URI (optional)**: Web, then enter "https://your-mattermost-url.com/plugins/skype4business/api/v1/auth_redirect" replacing `https://your-mattermost-url.com` with your Mattermost URL
+    4. Click **Register** to submit
+3. Grant permissions for your application in Azure Active Directory
+    1. Select **API permissions** in the application sidebar menu, then **Add a permision -> Skype for Business -> Delegated permissions**
+    2. Click the **Meetings** dropdown, then check `Meetings.ReadWrite`.
+    3. Click **Add permissions** to submit
+    4. Click **Grant admin consent for ...**, then **Yes** to confirm
+4. Allow implicit flow in Azure Active Directory
+    1. Select **Manifest** in the application sidebar menu
+    2. Set the `oauth2AllowImplicitFlow` and `oauth2AllowIdTokenImplicitFlow` values to true
+    3. Click **Save**
+5. Configure the plugin in Mattermost
+    1. Select **Overview** in the application sidebar menu
+    2. Copy the **Application (client) ID** value
+    3. In Mattermost, go to **System Console -> Plugins -> Skype for Business**, and enter the **Application ID** you copied on the previous step
+    4. Choose ``Online`` as the **Skype for Business Product Type**.
+    5. Click **Save**
 6. Enable the plugin
-    1. Go to System Console -> Plugins -> Management and click "Enable" underneath the Skype For Business plugin
+    1. Go to **System Console -> Plugins -> Management** and click **Enable** underneath the Skype for Business plugin
 7. Try it out
-    1. Click the Skype for Business icon in the channel header
-    2. A popup will be opened to sign in on the microsoftonline.com
-    3. Once you signed in, the popup will be automatically closed
-    4. New post will be created with a link to the newly created meeting
-    5. By clicking the "Join meeting" button, you will be redirected to a meet.lync.com page, which in turn will open a Skype for Business client installed on your computer / smartphone to join the meeting
+    1. Go to a Mattermost channel and click the Skype for Business icon in the channel header
+    2. A dialog will open asking you to sign in to microsoftonline.com
+    3. Once signed in, the dialog will close and a new message posted to the channel, with a link to the newly created meeting
+    4. By clicking the "Join meeting" button, you will be redirected to a meet.<YOUR DOMAIN> page, which in turn opens a Skype for Business client installed on your computer or smartphone to join the meeting
 
 ### Skype for Business Server
 
 1. Install the plugin
-    1. Clone the project from GitHub onto your local computer and build it
-    2. In Mattermost, go the System Console -> Plugins -> Management
+    1. Download the latest version of the plugin from the GitHub releases page
+    2. In Mattermost, go to **System Console -> Plugins -> Management**
     3. Upload the plugin
-2. Create a bot account in your domain.
-3. Fill the "Bot username" and "Bot password" fields with the bot's account credentials.
-    1. Set "Is Server version?" to true
-    2. Fill the "Domain" field with the domain where your Skype for Business Server is running, e.g. contoso.com.
-4. Enable the plugin
-    1. Go to System Console -> Plugins -> Management and click "Enable" underneath the Skype For Business plugin
-5. Try it out
-    1. Click the Skype for Business icon in the channel header
-    2. New post will be created with a link to the newly created meeting
-    3. By clicking the "Join meeting" button, you will be redirected to a meet.<YOUR DOMAIN> page, which in turn will open a Skype for Business client installed on your computer / smartphone to join the meeting
+2. Configure the plugin
+    1. Go to **System Console -> Plugins -> Skype for Business**
+    2. Choose ``Server`` as the **Skype for Business Product Type**
+    3. Enter the **Server Domain** of your Skype for Business server instance. For example, ``contoso.com.``
+    4. Enter the **Bot Username** of your bot user created in the Skype for Business domain. For example, bot@contoso.com. We strongly recommend using a dedicated bot account for this plugin, rather than an existing user account.
+    5. Enter the **Bot Username** of your bot user created in the Skype for Business domain.
+    6. Click **Save**
+3. Enable the plugin
+    1. Go to **System Console -> Plugins -> Management** and click **Enable** underneath the Skype for Business plugin
+4. Try it out
+    1. Go to a Mattermost channel and click the Skype for Business icon in the channel header
+    2. Observe a new message posted to the channel, with a link to the newly created meeting
+    3. By clicking the "Join meeting" button, you will be redirected to a meet.<YOUR DOMAIN> page, which in turn opens a Skype for Business client installed on your computer or smartphone to join the meeting
 
 ## Developing
 
