@@ -6,8 +6,6 @@ import PropTypes from 'prop-types';
 
 import {makeStyleFromTheme} from 'mattermost-redux/utils/theme_utils';
 
-import {Svgs} from '../../constants';
-
 export default class PostTypeS4b extends React.PureComponent {
     static propTypes = {
 
@@ -40,10 +38,6 @@ export default class PostTypeS4b extends React.PureComponent {
                 target='_blank'
                 href={props.meeting_link}
             >
-                <i
-                    style={style.buttonIcon}
-                    dangerouslySetInnerHTML={{__html: Svgs.SKYPE_2}}
-                />
                 {'JOIN MEETING'}
             </a>
         );

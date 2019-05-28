@@ -6,8 +6,13 @@ package main
 import (
 	"encoding/json"
 	"fmt"
+	"github.com/mattermost/mattermost-server/mlog"
+	"io"
 	"net/http"
 	"net/url"
+	"os"
+	"path"
+	"path/filepath"
 	"regexp"
 	"strings"
 	"sync"
@@ -19,7 +24,7 @@ import (
 const (
 	POST_MEETING_KEY               = "post_meeting_"
 	POST_MEETING_TYPE              = "custom_s4b"
-	POST_MEETING_OVERRIDE_USERNAME = "Skype for Business"
+	POST_MEETING_OVERRIDE_USERNAME = "Skype for Business Plugin"
 	NEW_APPLICATION_USER_AGENT     = "mm_skype4b_plugin"
 	NEW_APPLICATION_CULTURE        = "en-US"
 	WS_EVENT_AUTHENTICATED         = "authenticated"
@@ -76,6 +81,8 @@ func (p *Plugin) ServeHTTP(c *plugin.Context, w http.ResponseWriter, r *http.Req
 		p.completeAuthorizeInADD(w, r)
 	case "/api/v1/register_meeting_from_online_version":
 		p.handleRegisterMeetingFromOnlineVersion(w, r)
+	case "/api/v1/assets/profile.png":
+		p.handleProfileImage(w, r)
 	default:
 		http.NotFound(w, r)
 	}
@@ -277,6 +284,8 @@ func (p *Plugin) handleRegisterMeetingFromOnlineVersion(w http.ResponseWriter, r
 		return
 	}
 
+	serverConfiguration := p.API.GetConfig()
+
 	post := &model.Post{
 		UserId:    user.Id,
 		ChannelId: req.ChannelId,
@@ -290,7 +299,7 @@ func (p *Plugin) handleRegisterMeetingFromOnlineVersion(w http.ResponseWriter, r
 			"override_username": POST_MEETING_OVERRIDE_USERNAME,
 			"meeting_status":    "STARTED",
 			"from_webhook":      "true",
-			"override_icon_url": "", //todo
+			"override_icon_url": path.Join(*serverConfiguration.ServiceSettings.SiteURL, "plugins", manifest.Id, "api", "v1", "assets", "profile.png"),
 		},
 	}
 
@@ -368,6 +377,8 @@ func (p *Plugin) handleCreateMeetingInServerVersion(w http.ResponseWriter, r *ht
 		return
 	}
 
+	serverConfiguration := p.API.GetConfig()
+
 	post := &model.Post{
 		UserId:    user.Id,
 		ChannelId: req.ChannelId,
@@ -381,7 +392,7 @@ func (p *Plugin) handleCreateMeetingInServerVersion(w http.ResponseWriter, r *ht
 			"meeting_topic":     "Meeting created by " + user.Username,
 			"meeting_status":    "STARTED",
 			"from_webhook":      "true",
-			"override_icon_url": "", //todo
+			"override_icon_url": path.Join(*serverConfiguration.ServiceSettings.SiteURL, "plugins", manifest.Id, "api", "v1", "assets", "profile.png"),
 		},
 	}
 
@@ -404,6 +415,24 @@ func (p *Plugin) handleCreateMeetingInServerVersion(w http.ResponseWriter, r *ht
 	}
 
 	return
+}
+
+func (p *Plugin) handleProfileImage(w http.ResponseWriter, r *http.Request) {
+	bundlePath, err := p.API.GetBundlePath()
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+	img, err := os.Open(filepath.Join(bundlePath, "assets", "profile.png"))
+	if err != nil {
+		http.NotFound(w, r)
+		mlog.Error("Unable to read Skype 4 Business plugin profile image, err=" + err.Error())
+		return
+	}
+	defer img.Close()
+
+	w.Header().Set("Content-Type", "image/png")
+	io.Copy(w, img)
 }
 
 func (p *Plugin) fetchOnlineMeetingsUrl() (*ApplicationState, *APIError) {

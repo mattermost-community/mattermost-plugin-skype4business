@@ -5,17 +5,15 @@ import React from 'react';
 
 import {makeStyleFromTheme} from 'mattermost-redux/utils/theme_utils';
 
-import {Svgs} from '../constants';
-
 export default class Icon extends React.PureComponent {
     render() {
         const style = getStyle();
 
         return (
-            <span
+            <img
                 style={style.iconStyle}
                 aria-hidden='true'
-                dangerouslySetInnerHTML={{__html: Svgs.SKYPE}}
+                src={'/plugins/skype4business/api/v1/assets/profile.png'}
             />
         );
     }
@@ -25,7 +23,8 @@ const getStyle = makeStyleFromTheme(() => {
     return {
         iconStyle: {
             position: 'relative',
-            top: '4px',
+            maxWidth: '20px',
+            top: '-2px',
         },
     };
 });
