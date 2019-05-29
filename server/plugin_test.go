@@ -119,6 +119,13 @@ func TestPlugin(t *testing.T) {
 				Email: "theuseremail",
 			}, (*model.AppError)(nil))
 
+			siteUrl := "https://domain.test"
+			api.On("GetConfig").Return(&model.Config{
+				ServiceSettings: model.ServiceSettings{
+					SiteURL: &siteUrl,
+				},
+			})
+
 			api.On("GetChannelMember", "thechannelid", "theuserid").Return(&model.ChannelMember{}, (*model.AppError)(nil))
 			api.On("CreatePost", mock.AnythingOfType("*model.Post")).Return(&model.Post{}, (*model.AppError)(nil))
 			api.On("KVSet", fmt.Sprintf("%v%v", POST_MEETING_KEY, "L30IC51J"), mock.AnythingOfType("[]uint8")).Return((*model.AppError)(nil))
@@ -188,6 +195,12 @@ func TestPlugin(t *testing.T) {
 		clientMock.On("createNewMeeting", mock.Anything, mock.Anything, mock.Anything).Return(&NewMeetingResponse{
 			MeetingId: expectedMeetingId,
 		}, nil)
+		siteUrl := "https://domain.test"
+		api.On("GetConfig").Return(&model.Config{
+			ServiceSettings: model.ServiceSettings{
+				SiteURL: &siteUrl,
+			},
+		})
 
 		p := Plugin{client: clientMock}
 		p.setConfiguration(&configuration{

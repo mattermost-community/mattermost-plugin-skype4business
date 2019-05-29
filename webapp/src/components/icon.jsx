@@ -15,7 +15,7 @@ export default class Icon extends React.PureComponent {
             <span
                 style={style.iconStyle}
                 aria-hidden='true'
-                dangerouslySetInnerHTML={{__html: Svgs.SKYPE}}
+                dangerouslySetInnerHTML={{__html: Svgs.VIDEO_CAMERA}}
             />
         );
     }
@@ -25,7 +25,7 @@ const getStyle = makeStyleFromTheme(() => {
     return {
         iconStyle: {
             position: 'relative',
-            top: '4px',
+            top: '-1px',
         },
     };
 });
