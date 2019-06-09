@@ -1,6 +1,6 @@
 {
   "name": "skype4business",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "description": "Skype for Business plugin for Mattermost",
   "author": "Mattermost",
   "license": "Apache-2.0",
