@@ -5,8 +5,11 @@ import (
 	"crypto/tls"
 	"encoding/json"
 	"io"
+	"io/ioutil"
 	"net/http"
 	"net/url"
+
+	"github.com/pkg/errors"
 )
 
 type Client struct {
@@ -28,8 +31,13 @@ func (c *Client) authenticate(url string, body url.Values) (*AuthResponse, error
 	if err != nil {
 		return nil, err
 	}
-	var authResponse AuthResponse
 	defer resp.Body.Close()
+
+	if err = c.validateResponse(resp); err != nil {
+		return nil, err
+	}
+
+	var authResponse AuthResponse
 	err = json.NewDecoder(resp.Body).Decode(&authResponse)
 	return &authResponse, err
 }
@@ -106,6 +114,35 @@ func (c *Client) do(req *http.Request, v interface{}) (*http.Response, error) {
 		return nil, err
 	}
 	defer resp.Body.Close()
+
+	if err = c.validateResponse(resp); err != nil {
+		return nil, err
+	}
+
 	err = json.NewDecoder(resp.Body).Decode(v)
 	return resp, err
+}
+
+func (c *Client) validateResponse(resp *http.Response) error {
+	if resp.StatusCode != http.StatusOK && resp.StatusCode != http.StatusCreated {
+		msg := "Bad response received. Status: " + resp.Status + ". "
+
+		xmd := resp.Header.Get("X-Ms-Diagnostics")
+		if xmd != "" {
+			msg += "X-Ms-Diagnostics from response: " + xmd + ". "
+		} else {
+			msg += "Doesn't have X-Ms-Diagnostics header. "
+		}
+
+		bodyBytes, _ := ioutil.ReadAll(resp.Body)
+		if bodyBytes != nil && len(bodyBytes) > 0 {
+			msg += "Response body: " + string(bodyBytes) + ". "
+		} else {
+			msg += "Doesn't have body. "
+		}
+
+		return errors.New(msg)
+	}
+
+	return nil
 }

@@ -1,17 +1,22 @@
 package main
 
 import (
+	"bytes"
 	"github.com/stretchr/testify/assert"
+	"io/ioutil"
 	"math"
 	"net/http"
 	"net/http/httptest"
 	"net/url"
+	"strconv"
 	"testing"
 )
 
 const (
 	URL_AUTHENTICATE            = "/auth"
+	URL_AUTHENTICATE_FAILING    = "/auth_fail"
 	URL_CREATE_NEW_APP          = "/new_app"
+	URL_CREATE_NEW_APP_FAILING  = "/new_app_fail"
 	URL_CREATE_NEW_MEETING      = "/new_meeting"
 	URL_PERFORM_DISCOVERY       = "/discovery"
 	URL_READ_USER_RESOURCE      = "/user"
@@ -46,6 +51,11 @@ func TestClient(t *testing.T) {
 
 		assert.NotNil(t, err)
 		assert.Nil(t, r)
+
+		r, err = client.authenticate(server.URL+URL_AUTHENTICATE_FAILING, url.Values{})
+
+		assert.NotNil(t, err)
+		assert.Nil(t, r)
 	})
 
 	t.Run("test createNewApplication", func(t *testing.T) {
@@ -62,6 +72,11 @@ func TestClient(t *testing.T) {
 		assert.Nil(t, r)
 
 		r, err = client.createNewApplication("", nil, TEST_TOKEN)
+
+		assert.NotNil(t, err)
+		assert.Equal(t, "", r.Embedded.OnlineMeetings.OnlineMeetingsLinks.MyOnlineMeetings.Href)
+
+		r, err = client.createNewApplication(server.URL+URL_CREATE_NEW_APP_FAILING, nil, TEST_TOKEN)
 
 		assert.NotNil(t, err)
 		assert.Equal(t, "", r.Embedded.OnlineMeetings.OnlineMeetingsLinks.MyOnlineMeetings.Href)
@@ -109,6 +124,53 @@ func TestClient(t *testing.T) {
 		assert.NotNil(t, err)
 		assert.Nil(t, r)
 	})
+
+	t.Run("test validateResponse", func(t *testing.T) {
+
+		resp := &http.Response{
+			StatusCode: http.StatusOK,
+		}
+
+		err := client.validateResponse(resp)
+
+		assert.NoError(t, err)
+
+		resp = &http.Response{
+			StatusCode: http.StatusCreated,
+		}
+
+		err = client.validateResponse(resp)
+
+		assert.NoError(t, err)
+
+		resp = &http.Response{
+			Status:     strconv.Itoa(http.StatusInternalServerError) + " " + http.StatusText(http.StatusInternalServerError),
+			StatusCode: http.StatusInternalServerError,
+			Body:       ioutil.NopCloser(bytes.NewBufferString("test body")),
+		}
+
+		err = client.validateResponse(resp)
+
+		assert.Equal(
+			t,
+			"Bad response received. Status: 500 Internal Server Error. Doesn't have X-Ms-Diagnostics header. "+
+				"Response body: test body. ",
+			err.Error())
+
+		resp = &http.Response{
+			Status:     strconv.Itoa(http.StatusInternalServerError) + " " + http.StatusText(http.StatusInternalServerError),
+			StatusCode: http.StatusInternalServerError,
+			Body:       ioutil.NopCloser(bytes.NewBufferString("")),
+		}
+
+		err = client.validateResponse(resp)
+
+		assert.Equal(
+			t,
+			"Bad response received. Status: 500 Internal Server Error. Doesn't have X-Ms-Diagnostics header. "+
+				"Doesn't have body. ",
+			err.Error())
+	})
 }
 
 func setupTestServer(t *testing.T) {
@@ -116,6 +178,11 @@ func setupTestServer(t *testing.T) {
 
 	mux.HandleFunc(URL_AUTHENTICATE, func(writer http.ResponseWriter, request *http.Request) {
 		writeResponse(t, writer, `{"access_token": "`+TEST_TOKEN+`"}`)
+	})
+
+	mux.HandleFunc(URL_AUTHENTICATE_FAILING, func(writer http.ResponseWriter, request *http.Request) {
+		writer.Header().Set("X-Ms-Diagnostics", "wrong credentials")
+		writer.WriteHeader(http.StatusForbidden)
 	})
 
 	mux.HandleFunc(URL_CREATE_NEW_APP, func(writer http.ResponseWriter, request *http.Request) {
@@ -132,6 +199,11 @@ func setupTestServer(t *testing.T) {
 			  }
 			}
 		`)
+	})
+
+	mux.HandleFunc(URL_CREATE_NEW_APP_FAILING, func(writer http.ResponseWriter, request *http.Request) {
+		writer.Header().Set("X-Ms-Diagnostics", "something went wrong")
+		writer.WriteHeader(http.StatusInternalServerError)
 	})
 
 	mux.HandleFunc(URL_CREATE_NEW_MEETING, func(writer http.ResponseWriter, request *http.Request) {

@@ -322,13 +322,14 @@ func (p *Plugin) handleRegisterMeetingFromOnlineVersion(w http.ResponseWriter, r
 func (p *Plugin) handleCreateMeetingInServerVersion(w http.ResponseWriter, r *http.Request) {
 	config := p.getConfiguration()
 	if config.ProductType == PRODUCT_TYPE_ONLINE {
+		mlog.Error("Cannot create meeting in the server version when the online is set")
 		http.Error(w, "Forbidden", http.StatusForbidden)
 		return
 	}
 
 	userId := r.Header.Get("Mattermost-User-Id")
 	if userId == "" {
-		fmt.Println("Request doesn't have Mattermost-User-Id header")
+		mlog.Error("Request doesn't have Mattermost-User-Id header")
 		http.Error(w, "Not authorized", http.StatusUnauthorized)
 		return
 	}
@@ -337,29 +338,29 @@ func (p *Plugin) handleCreateMeetingInServerVersion(w http.ResponseWriter, r *ht
 	var appError *model.AppError
 	user, appError = p.API.GetUser(userId)
 	if appError != nil {
-		fmt.Println(appError.Error())
+		mlog.Error("Error getting user: " + appError.Error())
 		http.Error(w, appError.Error(), appError.StatusCode)
 		return
 	} else if user == nil {
-		fmt.Println("User is nil")
+		mlog.Error("User with that id doesn't exist: " + userId)
 		http.Error(w, "User is nil", http.StatusUnauthorized)
 		return
 	}
 
 	var req StartServerMeetingRequest
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-		fmt.Println(err.Error())
+		mlog.Error("Error decoding JSON body: " + err.Error())
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
 	} else if _, err := p.API.GetChannelMember(req.ChannelId, user.Id); err != nil {
-		fmt.Println(err.Error())
+		mlog.Error("Error getting channel member: " + err.Error())
 		http.Error(w, "Forbidden", http.StatusForbidden)
 		return
 	}
 
 	applicationState, apiErr := p.fetchOnlineMeetingsUrl()
 	if apiErr != nil {
-		fmt.Println(apiErr.Message)
+		mlog.Error("Error fetching meetings resource url: " + apiErr.Message)
 		http.Error(w, apiErr.Message, http.StatusInternalServerError)
 		return
 	}
@@ -372,7 +373,7 @@ func (p *Plugin) handleCreateMeetingInServerVersion(w http.ResponseWriter, r *ht
 		applicationState.Token,
 	)
 	if err != nil {
-		fmt.Println(err.Error())
+		mlog.Error("Error creating a new meeting: " + err.Error())
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
@@ -397,20 +398,20 @@ func (p *Plugin) handleCreateMeetingInServerVersion(w http.ResponseWriter, r *ht
 	}
 
 	if post, err := p.API.CreatePost(post); err != nil {
-		fmt.Println(err.Error())
+		mlog.Error("Error creating a new post with the new meeting: " + err.Error())
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	} else {
 		err = p.API.KVSet(fmt.Sprintf("%v%v", POST_MEETING_KEY, newMeetingResponse.MeetingId), []byte(post.Id))
 		if err != nil {
-			fmt.Println(err.Error())
+			mlog.Error("Error writing meeting id to the database: " + err.Error())
 			http.Error(w, err.Error(), http.StatusInternalServerError)
 			return
 		}
 	}
 
 	if err := json.NewEncoder(w).Encode(&newMeetingResponse); err != nil {
-		fmt.Println(err.Error())
+		mlog.Error("Error encoding the new meeting response: " + err.Error())
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 	}
 
@@ -454,7 +455,7 @@ func (p *Plugin) fetchOnlineMeetingsUrl() (*ApplicationState, *APIError) {
 		applicationState.Token,
 	)
 	if err != nil {
-		return nil, &APIError{Message: err.Error()}
+		return nil, &APIError{Message: "Error creating a new application: " + err.Error()}
 	}
 
 	applicationState.OnlineMeetingsUrl = "https://" + applicationState.Resource + "/" + newApplicationResponse.Embedded.OnlineMeetings.OnlineMeetingsLinks.MyOnlineMeetings.Href
@@ -467,7 +468,7 @@ func (p *Plugin) getApplicationState(discoveryUrl string) (*ApplicationState, *A
 
 	DiscoveryResponse, err := p.client.performDiscovery(discoveryUrl)
 	if err != nil {
-		return nil, &APIError{Message: err.Error()}
+		return nil, &APIError{Message: "Error performing autodiscovery: " + err.Error()}
 	}
 
 	userResourceUrl := DiscoveryResponse.Links.User.Href
@@ -483,12 +484,12 @@ func (p *Plugin) getApplicationState(discoveryUrl string) (*ApplicationState, *A
 		"resource":   {resourceName},
 	})
 	if err != nil {
-		return nil, &APIError{Message: err.Error()}
+		return nil, &APIError{Message: "Error during authentication: " + err.Error()}
 	}
 
 	userResourceResponse, err := p.client.readUserResource(userResourceUrl, authResponse.Access_token)
 	if err != nil {
-		return nil, &APIError{Message: err.Error()}
+		return nil, &APIError{Message: "Error reading user resource: " + err.Error()}
 	}
 
 	if userResourceResponse.Links.Applications.Href != "" {
@@ -501,7 +502,7 @@ func (p *Plugin) getApplicationState(discoveryUrl string) (*ApplicationState, *A
 		return p.getApplicationState(userResourceResponse.Links.Redirect.Href)
 	} else {
 		return nil, &APIError{
-			Message: "Unexpected error during creating an application",
+			Message: "Neither applications resource or redirect resource fetched from user resource",
 		}
 	}
 }
