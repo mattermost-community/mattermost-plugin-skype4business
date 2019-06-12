@@ -4,12 +4,12 @@ import (
 	"bytes"
 	"crypto/tls"
 	"encoding/json"
+	"github.com/pkg/errors"
 	"io"
 	"io/ioutil"
 	"net/http"
 	"net/url"
-
-	"github.com/pkg/errors"
+	"strings"
 )
 
 type Client struct {
@@ -106,6 +106,27 @@ func (c *Client) newRequest(method, url string, body interface{}, token *string)
 	req.Header.Set("Accept", "application/json")
 
 	return req, nil
+}
+
+func (c *Client) performRequestAndGetAuthHeader(url string) (*string, error) {
+	req, err := c.newRequest("GET", url, nil, nil)
+	if err != nil {
+		return nil, err
+	}
+
+	resp, err := c.httpClient.Do(req)
+	if err != nil {
+		return nil, err
+	}
+
+	for k, v := range resp.Header {
+		if strings.ToUpper(k) == "WWW-AUTHENTICATE" {
+			authHeader := strings.Join(v, ",")
+			return &authHeader, nil
+		}
+	}
+
+	return nil, errors.New("Response doesn't have WWW-AUTHENTICATE header!")
 }
 
 func (c *Client) do(req *http.Request, v interface{}) (*http.Response, error) {

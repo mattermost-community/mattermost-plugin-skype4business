@@ -28,6 +28,7 @@ const (
 	NEW_APPLICATION_USER_AGENT     = "mm_skype4b_plugin"
 	NEW_APPLICATION_CULTURE        = "en-US"
 	WS_EVENT_AUTHENTICATED         = "authenticated"
+	ROOT_URL_KEY                   = "root_url"
 )
 
 type IClient interface {
@@ -35,6 +36,7 @@ type IClient interface {
 	createNewApplication(url string, body interface{}, token string) (*NewApplicationResponse, error)
 	createNewMeeting(url string, body interface{}, token string) (*NewMeetingResponse, error)
 	performDiscovery(url string) (*DiscoveryResponse, error)
+	performRequestAndGetAuthHeader(url string) (*string, error)
 	readUserResource(url string, token string) (*UserResourceResponse, error)
 }
 
@@ -437,10 +439,12 @@ func (p *Plugin) handleProfileImage(w http.ResponseWriter, r *http.Request) {
 }
 
 func (p *Plugin) fetchOnlineMeetingsUrl() (*ApplicationState, *APIError) {
-	config := p.getConfiguration()
-	discoveryUrl := "https://lyncdiscover." + config.Domain
+	rootUrl, apiErr := p.getRootUrl()
+	if apiErr != nil {
+		return nil, apiErr
+	}
 
-	applicationState, apiError := p.getApplicationState(discoveryUrl)
+	applicationState, apiError := p.getApplicationState(*rootUrl)
 	if apiError != nil {
 		return nil, apiError
 	}
@@ -471,13 +475,22 @@ func (p *Plugin) getApplicationState(discoveryUrl string) (*ApplicationState, *A
 		return nil, &APIError{Message: "Error performing autodiscovery: " + err.Error()}
 	}
 
+	authHeader, err := p.client.performRequestAndGetAuthHeader(DiscoveryResponse.Links.User.Href)
+	if err != nil {
+		return nil, &APIError{Message: "Error performing request to get authentication header: " + err.Error()}
+	}
+
+	tokenUrl, apiErr := p.extractTokenUrl(*authHeader)
+	if apiErr != nil {
+		return nil, apiErr
+	}
+
 	userResourceUrl := DiscoveryResponse.Links.User.Href
 	resourceRegex := regexp.MustCompile(`https:\/\/(.*)\/Autodiscover\/`)
 	resourceRegexMatch := resourceRegex.FindStringSubmatch(userResourceUrl)
 	resourceName := resourceRegexMatch[1]
-	tokenUrl := "https://lyncweb." + config.Domain + "/webticket/oauthtoken"
 
-	authResponse, err := p.client.authenticate(tokenUrl, url.Values{
+	authResponse, err := p.client.authenticate(*tokenUrl, url.Values{
 		"grant_type": {"password"},
 		"username":   {config.Username},
 		"password":   {config.Password},
@@ -505,4 +518,86 @@ func (p *Plugin) getApplicationState(discoveryUrl string) (*ApplicationState, *A
 			Message: "Neither applications resource or redirect resource fetched from user resource",
 		}
 	}
+}
+
+func (p *Plugin) getRootUrl() (*string, *APIError) {
+	rootUrlBytes, appErr := p.API.KVGet(ROOT_URL_KEY)
+	if appErr != nil {
+		return nil, &APIError{Message: "Cannot fetch the root url from the database: " + appErr.Error()}
+	}
+
+	if rootUrlBytes != nil {
+		rootUrl := string(rootUrlBytes)
+		return &rootUrl, nil
+	}
+
+	rootUrl, err := p.determineRootUrl(p.getConfiguration().Domain)
+	if err != nil {
+		return nil, err
+	}
+
+	_ = p.API.KVSet(ROOT_URL_KEY, []byte(*rootUrl))
+
+	return rootUrl, nil
+}
+
+func (p *Plugin) determineRootUrl(domain string) (*string, *APIError) {
+	for _, o := range []struct {
+		url  string
+		name string
+	}{
+		{
+			url:  "https://lyncdiscoverinternal." + domain,
+			name: "internal https",
+		},
+		{
+			url:  "https://lyncdiscover." + domain,
+			name: "external https",
+		},
+		{
+			url:  "http://lyncdiscoverinternal." + domain,
+			name: "internal http",
+		},
+		{
+			url:  "http://lyncdiscover." + domain,
+			name: "external http",
+		},
+	} {
+		_, err := p.client.performDiscovery(o.url)
+		if err == nil {
+			return &o.url, nil
+		} else {
+			mlog.Warn("Error performing autodiscovery with " + o.name + " root URL: " + err.Error())
+		}
+	}
+
+	return nil, &APIError{
+		Message: "Cannot determine root URL. Check if your DNS server has a lyncdiscover or lyncdiscoverinternal record.",
+	}
+}
+
+func (p *Plugin) extractTokenUrl(authHeader string) (*string, *APIError) {
+	webTicketUrlRegexMatch := regexp.MustCompile(`href=(.*?),`).FindStringSubmatch(authHeader)
+	if len(webTicketUrlRegexMatch) < 1 {
+		return nil, &APIError{
+			Message: "Cannot extract webTicket URL from WWW-AUTHENTICATE header! Full header value: " + authHeader,
+		}
+	}
+	webTicketUrl := strings.ReplaceAll(webTicketUrlRegexMatch[1], "\"", "")
+
+	grantTypeRegexMatch := regexp.MustCompile(`grant_type="(.*?)"`).FindStringSubmatch(authHeader)
+	if len(grantTypeRegexMatch) < 1 {
+		return nil, &APIError{
+			Message: "Cannot extract grant types from WWW-AUTHENTICATE header! Full header value: " + authHeader,
+		}
+	}
+	grantTypes := grantTypeRegexMatch[1]
+
+	if !regexp.MustCompile("password").MatchString(grantTypes) {
+		return nil, &APIError{
+			Message: "WWW-AUTHENTICATE header doesn't have the password grant type! Full header value: " + authHeader,
+		}
+	}
+
+	return &webTicketUrl, nil
 }

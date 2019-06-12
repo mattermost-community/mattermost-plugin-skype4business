@@ -152,6 +152,7 @@ func TestPlugin(t *testing.T) {
 	t.Run("create_meeting_in_server_version", func(t *testing.T) {
 
 		givenDomainUrl := "domain.test"
+		givenAuthHeader := `WWW-Authenticate: MsRtcOAuth href=https://contoso.com/WebTicket/oauthtoken,grant_type="urn:microsoft.rtc:windows,urn:microsoft.rtc:anonmeeting,password"`
 		expectedDiscoveryUrl := "https://lyncdiscover.domain.test"
 		expectedUserResourceUrl := "https://win-123.domain.test/Autodiscover/AutodiscoverService.svc/root/oauth/user"
 		expectedApplicationsUrl := "https://win-123.domain.test/ucwa/oauth/v1/applications"
@@ -167,8 +168,13 @@ func TestPlugin(t *testing.T) {
 		api.On("GetChannelMember", "thechannelid", "theuserid").Return(&model.ChannelMember{}, (*model.AppError)(nil))
 		api.On("CreatePost", mock.AnythingOfType("*model.Post")).Return(&model.Post{}, (*model.AppError)(nil))
 		api.On("KVSet", fmt.Sprintf("%v%v", POST_MEETING_KEY, expectedMeetingId), mock.AnythingOfType("[]uint8")).Return((*model.AppError)(nil))
+		api.On("KVGet", ROOT_URL_KEY).Return([]byte("https://lyncdiscover.domain.test"), (*model.AppError)(nil))
 
 		clientMock := &ClientMock{}
+		clientMock.On(
+			"performRequestAndGetAuthHeader",
+			"https://win-123.domain.test/Autodiscover/AutodiscoverService.svc/root/oauth/user",
+		).Return(&givenAuthHeader, nil)
 		clientMock.On("performDiscovery", expectedDiscoveryUrl).Return(&DiscoveryResponse{
 			Links: Links{
 				User: Href{Href: expectedUserResourceUrl},
@@ -260,6 +266,16 @@ func (c *ClientMock) performDiscovery(url string) (*DiscoveryResponse, error) {
 
 	if ret.Get(0) != nil && ret.Get(1) == nil {
 		return ret.Get(0).(*DiscoveryResponse), nil
+	} else {
+		return nil, ret.Error(1)
+	}
+}
+
+func (c *ClientMock) performRequestAndGetAuthHeader(url string) (*string, error) {
+	ret := c.Called(url)
+
+	if ret.Get(0) != nil && ret.Get(1) == nil {
+		return ret.Get(0).(*string), nil
 	} else {
 		return nil, ret.Error(1)
 	}
