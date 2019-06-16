@@ -27,7 +27,8 @@ type State struct {
 }
 
 type NewMeetingRequest struct {
-	Subject string `json:"subject"`
+	Subject                   string `json:"subject"`
+	AutomaticLeaderAssignment string `json:"automaticLeaderAssignment"`
 }
 
 type NewMeetingResponse struct {

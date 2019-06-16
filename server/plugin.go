@@ -370,7 +370,8 @@ func (p *Plugin) handleCreateMeetingInServerVersion(w http.ResponseWriter, r *ht
 	newMeetingResponse, err := p.client.createNewMeeting(
 		applicationState.OnlineMeetingsUrl,
 		NewMeetingRequest{
-			Subject: "Meeting created by " + user.Username,
+			Subject:                   "Meeting created by " + user.Username,
+			AutomaticLeaderAssignment: "SameEnterprise",
 		},
 		applicationState.Token,
 	)

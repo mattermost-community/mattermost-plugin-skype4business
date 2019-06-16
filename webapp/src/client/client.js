@@ -272,6 +272,7 @@ export default class Client {
     sendMeetingData = async (url, appAccessToken) => {
         const data = {
             subject: 'Meeting created by the Mattermost Skype for Business plugin',
+            automaticLeaderAssignment: 'SameEnterprise',
         };
 
         const response = await request.
