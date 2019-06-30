@@ -507,6 +507,22 @@ func (p *Plugin) getApplicationState(discoveryUrl string) (*ApplicationState, *A
 	}
 
 	if userResourceResponse.Links.Applications.Href != "" {
+
+		applicationsResourceName := p.extractResourceNameFromApplicationsUrl(userResourceResponse.Links.Applications.Href)
+
+		if applicationsResourceName != resourceName {
+			mlog.Warn("Resource from applications url is not the same as resource name from user url")
+			authResponse, err = p.client.authenticate(*tokenUrl, url.Values{
+				"grant_type": {"password"},
+				"username":   {config.Username},
+				"password":   {config.Password},
+				"resource":   {applicationsResourceName},
+			})
+			if err != nil {
+				return nil, &APIError{Message: "Error during authentication: " + err.Error()}
+			}
+		}
+
 		return &ApplicationState{
 			ApplicationsUrl: userResourceResponse.Links.Applications.Href,
 			Resource:        resourceName,
@@ -601,4 +617,10 @@ func (p *Plugin) extractTokenUrl(authHeader string) (*string, *APIError) {
 	}
 
 	return &webTicketUrl, nil
+}
+
+func (p *Plugin) extractResourceNameFromApplicationsUrl(applicationsUrl string) string {
+	resourceRegex := regexp.MustCompile(`https:\/\/(.*)\/ucwa\/`)
+	resourceRegexMatch := resourceRegex.FindStringSubmatch(applicationsUrl)
+	return resourceRegexMatch[1]
 }
