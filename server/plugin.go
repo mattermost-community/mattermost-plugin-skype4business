@@ -512,6 +512,18 @@ func (p *Plugin) getApplicationState(discoveryUrl string) (*ApplicationState, *A
 
 		if applicationsResourceName != resourceName {
 			mlog.Warn("Resource from applications url is not the same as resource name from user url")
+
+			userResourceUrl = strings.Replace(userResourceUrl, resourceName, applicationsResourceName, 1)
+			authHeader, err := p.client.performRequestAndGetAuthHeader(userResourceUrl)
+			if err != nil {
+				return nil, &APIError{Message: "Error performing request to get authentication header: " + err.Error()}
+			}
+
+			tokenUrl, apiErr := p.extractTokenUrl(*authHeader)
+			if apiErr != nil {
+				return nil, apiErr
+			}
+
 			authResponse, err = p.client.authenticate(*tokenUrl, url.Values{
 				"grant_type": {"password"},
 				"username":   {config.Username},
