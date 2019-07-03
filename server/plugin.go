@@ -513,10 +513,11 @@ func (p *Plugin) getApplicationState(discoveryUrl string) (*ApplicationState, *A
 		if applicationsResourceName != resourceName {
 			mlog.Warn("Resource from applications url is not the same as resource name from user url")
 
-			userResourceUrl = strings.Replace(userResourceUrl, resourceName, applicationsResourceName, 1)
-			authHeader, err := p.client.performRequestAndGetAuthHeader(userResourceUrl)
+			authHeader, err := p.client.performRequestAndGetAuthHeader(userResourceResponse.Links.Applications.Href)
 			if err != nil {
-				return nil, &APIError{Message: "Error performing request to get authentication header: " + err.Error()}
+				return nil, &APIError{
+					Message: "Error performing request to get authentication header from new resource: " + err.Error(),
+				}
 			}
 
 			tokenUrl, apiErr := p.extractTokenUrl(*authHeader)
@@ -531,13 +532,13 @@ func (p *Plugin) getApplicationState(discoveryUrl string) (*ApplicationState, *A
 				"resource":   {applicationsResourceName},
 			})
 			if err != nil {
-				return nil, &APIError{Message: "Error during authentication: " + err.Error()}
+				return nil, &APIError{Message: "Error during authentication in new resource: " + err.Error()}
 			}
 		}
 
 		return &ApplicationState{
 			ApplicationsUrl: userResourceResponse.Links.Applications.Href,
-			Resource:        resourceName,
+			Resource:        applicationsResourceName,
 			Token:           authResponse.Access_token,
 		}, nil
 	} else if userResourceResponse.Links.Redirect.Href != "" {
