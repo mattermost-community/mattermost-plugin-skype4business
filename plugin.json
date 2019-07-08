@@ -2,7 +2,7 @@
   "id": "skype4business",
   "name": "Skype for Business",
   "description": "Skype for Business plugin for Mattermost 5.2+.",
-  "version": "0.1.2-1",
+  "version": "0.1.2",
   "server": {
     "executables": {
       "linux-amd64": "server/dist/plugin-linux-amd64",
