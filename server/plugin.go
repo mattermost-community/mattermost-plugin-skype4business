@@ -487,16 +487,8 @@ func (p *Plugin) getApplicationState(discoveryUrl string) (*ApplicationState, *A
 	}
 
 	userResourceUrl := DiscoveryResponse.Links.User.Href
-	resourceRegex := regexp.MustCompile(`https:\/\/(.*)\/Autodiscover\/`)
-	resourceRegexMatch := resourceRegex.FindStringSubmatch(userResourceUrl)
-	resourceName := resourceRegexMatch[1]
-
-	authResponse, err := p.client.authenticate(*tokenUrl, url.Values{
-		"grant_type": {"password"},
-		"username":   {config.Username},
-		"password":   {config.Password},
-		"resource":   {resourceName},
-	})
+	resourceName := p.extractResourceNameFromUserUrl(userResourceUrl)
+	authResponse, err := p.authenticate(*tokenUrl, resourceName, *config)
 	if err != nil {
 		return nil, &APIError{Message: "Error during authentication: " + err.Error()}
 	}
@@ -506,14 +498,14 @@ func (p *Plugin) getApplicationState(discoveryUrl string) (*ApplicationState, *A
 		return nil, &APIError{Message: "Error reading user resource: " + err.Error()}
 	}
 
-	if userResourceResponse.Links.Applications.Href != "" {
+	applicationsUrl := userResourceResponse.Links.Applications.Href
+	if applicationsUrl != "" {
 
-		applicationsResourceName := p.extractResourceNameFromApplicationsUrl(userResourceResponse.Links.Applications.Href)
-
+		applicationsResourceName := p.extractResourceNameFromApplicationsUrl(applicationsUrl)
 		if applicationsResourceName != resourceName {
 			mlog.Warn("Resource from applications url is not the same as resource name from user url")
 
-			authHeader, err := p.client.performRequestAndGetAuthHeader(userResourceResponse.Links.Applications.Href)
+			authHeader, err := p.client.performRequestAndGetAuthHeader(applicationsUrl)
 			if err != nil {
 				return nil, &APIError{
 					Message: "Error performing request to get authentication header from new resource: " + err.Error(),
@@ -525,19 +517,14 @@ func (p *Plugin) getApplicationState(discoveryUrl string) (*ApplicationState, *A
 				return nil, apiErr
 			}
 
-			authResponse, err = p.client.authenticate(*tokenUrl, url.Values{
-				"grant_type": {"password"},
-				"username":   {config.Username},
-				"password":   {config.Password},
-				"resource":   {applicationsResourceName},
-			})
+			authResponse, err = p.authenticate(*tokenUrl, applicationsResourceName, *config)
 			if err != nil {
 				return nil, &APIError{Message: "Error during authentication in new resource: " + err.Error()}
 			}
 		}
 
 		return &ApplicationState{
-			ApplicationsUrl: userResourceResponse.Links.Applications.Href,
+			ApplicationsUrl: applicationsUrl,
 			Resource:        applicationsResourceName,
 			Token:           authResponse.Access_token,
 		}, nil
@@ -630,6 +617,21 @@ func (p *Plugin) extractTokenUrl(authHeader string) (*string, *APIError) {
 	}
 
 	return &webTicketUrl, nil
+}
+
+func (p *Plugin) authenticate(tokenUrl string, resourceName string, config configuration) (*AuthResponse, error) {
+	return p.client.authenticate(tokenUrl, url.Values{
+		"grant_type": {"password"},
+		"username":   {config.Username},
+		"password":   {config.Password},
+		"resource":   {resourceName},
+	})
+}
+
+func (p *Plugin) extractResourceNameFromUserUrl(userUrl string) string {
+	resourceRegex := regexp.MustCompile(`https:\/\/(.*)\/Autodiscover\/`)
+	resourceRegexMatch := resourceRegex.FindStringSubmatch(userUrl)
+	return resourceRegexMatch[1]
 }
 
 func (p *Plugin) extractResourceNameFromApplicationsUrl(applicationsUrl string) string {
