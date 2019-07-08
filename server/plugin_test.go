@@ -151,74 +151,277 @@ func TestPlugin(t *testing.T) {
 
 	t.Run("create_meeting_in_server_version", func(t *testing.T) {
 
-		givenDomainUrl := "domain.test"
-		expectedDiscoveryUrl := "https://lyncdiscover.domain.test"
-		expectedUserResourceUrl := "https://win-123.domain.test/Autodiscover/AutodiscoverService.svc/root/oauth/user"
-		expectedApplicationsUrl := "https://win-123.domain.test/ucwa/oauth/v1/applications"
-		expectedMeetingsUrl := "/ucwa/oauth/v1/applications/432/onlineMeetings/myOnlineMeetings"
-		expectedToken := "123"
-		expectedMeetingId := "BR140MRA"
+		mmChannelId := "234"
+		mmUser := model.User{Id: "userNo123", Email: "user123@test.com", Username: "testusername"}
+		w := httptest.NewRecorder()
 
-		api := &plugintest.API{}
-		api.On("GetUser", "theuserid").Return(&model.User{
-			Id:    "theuserid",
-			Email: "theuseremail",
-		}, (*model.AppError)(nil))
-		api.On("GetChannelMember", "thechannelid", "theuserid").Return(&model.ChannelMember{}, (*model.AppError)(nil))
-		api.On("CreatePost", mock.AnythingOfType("*model.Post")).Return(&model.Post{}, (*model.AppError)(nil))
-		api.On("KVSet", fmt.Sprintf("%v%v", POST_MEETING_KEY, expectedMeetingId), mock.AnythingOfType("[]uint8")).Return((*model.AppError)(nil))
+		t.Run("single_domain_scenario", func(t *testing.T) {
+			mocks := makeMocks(mmChannelId, mmUser, false)
 
-		clientMock := &ClientMock{}
-		clientMock.On("performDiscovery", expectedDiscoveryUrl).Return(&DiscoveryResponse{
-			Links: Links{
-				User: Href{Href: expectedUserResourceUrl},
-			},
-		}, nil)
-		clientMock.On("authenticate", mock.Anything, mock.Anything).Return(&AuthResponse{
-			Access_token: expectedToken,
-		}, nil)
-		clientMock.On("readUserResource", expectedUserResourceUrl, mock.Anything).Return(&UserResourceResponse{
-			Links: Links{
-				Applications: Href{Href: expectedApplicationsUrl},
-				Redirect:     Href{},
-			},
-		}, nil)
-		clientMock.On("createNewApplication", expectedApplicationsUrl, mock.Anything, expectedToken).Return(&NewApplicationResponse{
-			Embedded: Embedded{
-				OnlineMeetings: OnlineMeetings{
-					OnlineMeetingsLinks: OnlineMeetingsLinks{
-						MyOnlineMeetings: Href{Href: expectedMeetingsUrl},
-					},
+			mocks.Plugin.ServeHTTP(&plugin.Context{}, w, makeCreateMeetingInServerVersionRequest(mmChannelId, mmUser))
+			assert.Equal(t, http.StatusOK, w.Result().StatusCode)
+
+			verifyMocksCalls(t, mocks, false)
+		})
+
+		t.Run("create_meeting_in_server_version_split_domain_scenario", func(t *testing.T) {
+			mocks := makeMocks(mmChannelId, mmUser, true)
+
+			mocks.Plugin.ServeHTTP(&plugin.Context{}, w, makeCreateMeetingInServerVersionRequest(mmChannelId, mmUser))
+			assert.Equal(t, http.StatusOK, w.Result().StatusCode)
+
+			verifyMocksCalls(t, mocks, true)
+		})
+	})
+}
+
+func makeMocks(mmChannelId string, mmUser model.User, splitDomain bool) Mocks {
+	firstDomain := "firstdomain.com"
+	secondDomain := "seconddomain.com"
+	pluginConfigToReturn := configuration{
+		Domain:      firstDomain,
+		Username:    "simpleusername",
+		Password:    "veryhardpassword",
+		ProductType: PRODUCT_TYPE_SERVER,
+	}
+
+	tokenToReturnForFirstDomain := "tokenNo1"
+	expectedTokenUrlForFirstDomain := makeTokenUrl(firstDomain)
+	authHeaderToReturnForFirstDomain := makeAuthHeader(expectedTokenUrlForFirstDomain)
+	expectedUrlValuesForFirstDomain := makeUrlValues(pluginConfigToReturn, firstDomain)
+
+	var (
+		tokenToReturnForSecondDomain                 = ""
+		expectedTokenUrlForSecondDomain              = ""
+		authHeaderToReturnForSecondDomain            = ""
+		expectedUrlValuesForSecondDomain  url.Values = nil
+	)
+	if splitDomain {
+		tokenToReturnForSecondDomain = "tokenNo2"
+		expectedTokenUrlForSecondDomain = makeTokenUrl(secondDomain)
+		authHeaderToReturnForSecondDomain = makeAuthHeader(expectedTokenUrlForSecondDomain)
+		expectedUrlValuesForSecondDomain = makeUrlValues(pluginConfigToReturn, secondDomain)
+	}
+
+	expectedApplicationsUrl := makeApplicationsUrl(firstDomain)
+	if splitDomain {
+		expectedApplicationsUrl = makeApplicationsUrl(secondDomain)
+	}
+
+	expectedUserResourceUrl := makeUserUrl(firstDomain)
+	expectedMeetingsUrl := "/ucwa/oauth/v1/applications/432/onlineMeetings/myOnlineMeetings"
+	expectedMeetingId := "BR140MRA"
+	expectedNewApplicationRequest := makeNewApplicationRequest()
+	serverConfigToReturn := makeServerConfiguration(&firstDomain)
+	expectedPostMeetingId := "post_meeting_" + expectedMeetingId
+	discoveryUrlToReturn := "https://lyncdiscover." + firstDomain
+	discoveryResponseToReturn := makeDiscoveryResponse(expectedUserResourceUrl)
+	userResourceResponseToReturn := makeUserResourceResponse(expectedApplicationsUrl)
+	newApplicationResponseToReturn := makeNewApplicationResponse(expectedMeetingsUrl)
+	expectedNewMeetingRequest := makeNewMeetingRequest(mmUser)
+
+	expectedFullMeetingUrl := makeMeetingUrl(firstDomain, expectedMeetingsUrl)
+	newMeetingResponseToReturn := makeNewMeetingResponse(expectedMeetingId, firstDomain)
+	if splitDomain {
+		expectedFullMeetingUrl = makeMeetingUrl(secondDomain, expectedMeetingsUrl)
+		newMeetingResponseToReturn = makeNewMeetingResponse(expectedMeetingId, secondDomain)
+	}
+
+	expectedPost := makePost(mmUser, mmChannelId, newMeetingResponseToReturn, pluginConfigToReturn)
+
+	api := plugintest.API{}
+	api.On("GetConfig").Return(serverConfigToReturn).Times(1)
+	api.On("GetUser", mmUser.Id).Return(&mmUser, (*model.AppError)(nil)).Times(1)
+	api.On("GetChannelMember", mmChannelId, mmUser.Id).
+		Return(&model.ChannelMember{}, (*model.AppError)(nil)).Times(1)
+	api.On("KVGet", ROOT_URL_KEY).
+		Return([]byte(discoveryUrlToReturn), (*model.AppError)(nil)).Times(1)
+	api.On("CreatePost", expectedPost).
+		Return(&model.Post{}, (*model.AppError)(nil)).Times(1)
+	api.On("KVSet", expectedPostMeetingId, mock.AnythingOfType("[]uint8")).
+		Return((*model.AppError)(nil)).Times(1)
+
+	clientMock := ClientMock{}
+	clientMock.On("performDiscovery", "https://lyncdiscover."+firstDomain).
+		Return(discoveryResponseToReturn, nil).Times(1)
+	clientMock.On("performRequestAndGetAuthHeader", expectedUserResourceUrl).
+		Return(&authHeaderToReturnForFirstDomain, nil).Times(1)
+	clientMock.On("authenticate", expectedTokenUrlForFirstDomain, expectedUrlValuesForFirstDomain).
+		Return(&AuthResponse{Access_token: tokenToReturnForFirstDomain}, nil).Times(1)
+
+	tokenToBeUsed := tokenToReturnForFirstDomain
+	if splitDomain {
+		clientMock.On("authenticate", expectedTokenUrlForSecondDomain, expectedUrlValuesForSecondDomain).
+			Return(&AuthResponse{Access_token: tokenToReturnForSecondDomain}, nil).Times(1)
+		clientMock.On("performRequestAndGetAuthHeader", expectedApplicationsUrl).
+			Return(&authHeaderToReturnForSecondDomain, nil).Times(1)
+		tokenToBeUsed = tokenToReturnForSecondDomain
+	}
+
+	clientMock.On("readUserResource", expectedUserResourceUrl, tokenToReturnForFirstDomain).
+		Return(userResourceResponseToReturn, nil).Times(1)
+	clientMock.On(
+		"createNewApplication",
+		expectedApplicationsUrl,
+		expectedNewApplicationRequest,
+		tokenToBeUsed,
+	).Return(newApplicationResponseToReturn, nil).Times(1)
+	clientMock.On(
+		"createNewMeeting",
+		expectedFullMeetingUrl,
+		expectedNewMeetingRequest,
+		tokenToBeUsed,
+	).Return(&newMeetingResponseToReturn, nil).Times(1)
+
+	p := Plugin{client: &clientMock}
+	p.SetAPI(&api)
+	p.setConfiguration(&pluginConfigToReturn)
+
+	return Mocks{
+		Api:    &api,
+		Client: &clientMock,
+		Plugin: &p,
+	}
+}
+
+func verifyMocksCalls(t *testing.T, mocks Mocks, splitDomain bool) {
+	mocks.Api.AssertNumberOfCalls(t, "GetConfig", 1)
+	mocks.Api.AssertNumberOfCalls(t, "GetUser", 1)
+	mocks.Api.AssertNumberOfCalls(t, "GetChannelMember", 1)
+	mocks.Api.AssertNumberOfCalls(t, "KVGet", 1)
+	mocks.Api.AssertNumberOfCalls(t, "CreatePost", 1)
+	mocks.Api.AssertNumberOfCalls(t, "KVSet", 1)
+
+	mocks.Client.AssertNumberOfCalls(t, "performDiscovery", 1)
+	mocks.Client.AssertNumberOfCalls(t, "readUserResource", 1)
+	mocks.Client.AssertNumberOfCalls(t, "createNewApplication", 1)
+	mocks.Client.AssertNumberOfCalls(t, "createNewMeeting", 1)
+	if splitDomain {
+		mocks.Client.AssertNumberOfCalls(t, "performRequestAndGetAuthHeader", 2)
+		mocks.Client.AssertNumberOfCalls(t, "authenticate", 2)
+	} else {
+		mocks.Client.AssertNumberOfCalls(t, "performRequestAndGetAuthHeader", 1)
+		mocks.Client.AssertNumberOfCalls(t, "authenticate", 1)
+	}
+}
+
+type Mocks struct {
+	Api    *plugintest.API
+	Client *ClientMock
+	Plugin *Plugin
+}
+
+func makeCreateMeetingInServerVersionRequest(mmChannelId string, mmUser model.User) *http.Request {
+	r := httptest.NewRequest("POST", "/api/v1/create_meeting_in_server_version",
+		strings.NewReader("{\"channel_id\": \""+mmChannelId+"\", \"personal\": true}"))
+	r.Header.Add("Mattermost-User-Id", mmUser.Id)
+	return r
+}
+
+func makeServerConfiguration(siteUrl *string) *model.Config {
+	return &model.Config{
+		ServiceSettings: model.ServiceSettings{
+			SiteURL: siteUrl,
+		},
+	}
+}
+
+func makeDiscoveryResponse(userUrl string) *DiscoveryResponse {
+	return &DiscoveryResponse{
+		Links: Links{
+			User: Href{Href: userUrl},
+		},
+	}
+}
+
+func makeUserUrl(domain string) string {
+	return "https://" + domain + "/Autodiscover/AutodiscoverService.svc/root/oauth/user"
+}
+
+func makeUserResourceResponse(applicationsUrl string) *UserResourceResponse {
+	return &UserResourceResponse{
+		Links: Links{
+			Applications: Href{Href: applicationsUrl},
+			Redirect:     Href{},
+		},
+	}
+}
+
+func makeTokenUrl(domain string) string {
+	return "https://" + domain + "/WebTicket/oauthtoken"
+}
+
+func makeAuthHeader(tokenUrl string) string {
+	return "WWW-Authenticate: MsRtcOAuth href=" + tokenUrl +
+		",grant_type=\"urn:microsoft.rtc:windows,urn:microsoft.rtc:anonmeeting,password\""
+}
+
+func makeUrlValues(pluginConfig configuration, domain string) url.Values {
+	return url.Values{
+		"grant_type": []string{"password"},
+		"password":   []string{pluginConfig.Password},
+		"resource":   []string{domain},
+		"username":   []string{pluginConfig.Username},
+	}
+}
+
+func makeApplicationsUrl(domain string) string {
+	return "https://" + domain + "/ucwa/oauth/v1/applications"
+}
+
+func makeNewApplicationRequest() NewApplicationRequest {
+	return NewApplicationRequest{
+		UserAgent:  NEW_APPLICATION_USER_AGENT,
+		Culture:    NEW_APPLICATION_CULTURE,
+		EndpointId: "123",
+	}
+}
+
+func makeNewApplicationResponse(meetingsUrl string) *NewApplicationResponse {
+	return &NewApplicationResponse{
+		Embedded: Embedded{
+			OnlineMeetings: OnlineMeetings{
+				OnlineMeetingsLinks: OnlineMeetingsLinks{
+					MyOnlineMeetings: Href{Href: meetingsUrl},
 				},
 			},
-		}, nil)
-		clientMock.On("createNewMeeting", mock.Anything, mock.Anything, mock.Anything).Return(&NewMeetingResponse{
-			MeetingId: expectedMeetingId,
-		}, nil)
-		siteUrl := "https://domain.test"
-		api.On("GetConfig").Return(&model.Config{
-			ServiceSettings: model.ServiceSettings{
-				SiteURL: &siteUrl,
-			},
-		})
+		},
+	}
+}
 
-		p := Plugin{client: clientMock}
-		p.setConfiguration(&configuration{
-			Domain:      givenDomainUrl,
-			Username:    "username",
-			Password:    "password",
-			ProductType: PRODUCT_TYPE_SERVER,
-		})
-		p.SetAPI(api)
-		err := p.OnActivate()
-		assert.Nil(t, err)
+func makeMeetingUrl(domain string, meettingsUrlWithoutHost string) string {
+	return "https://" + domain + "/" + meettingsUrlWithoutHost
+}
 
-		r := httptest.NewRequest("POST", "/api/v1/create_meeting_in_server_version", strings.NewReader("{\"channel_id\": \"thechannelid\", \"personal\": true}"))
-		r.Header.Add("Mattermost-User-Id", "theuserid")
-		w := httptest.NewRecorder()
-		p.ServeHTTP(&plugin.Context{}, w, r)
-		assert.Equal(t, http.StatusOK, w.Result().StatusCode)
-	})
+func makeNewMeetingRequest(mmUser model.User) NewMeetingRequest {
+	return NewMeetingRequest{Subject: "Meeting created by " + mmUser.Username, AutomaticLeaderAssignment: "SameEnterprise"}
+}
+
+func makeNewMeetingResponse(meetingId string, domain string) NewMeetingResponse {
+	return NewMeetingResponse{
+		MeetingId: meetingId,
+		JoinUrl:   domain + "/meetings/" + meetingId,
+	}
+}
+
+func makePost(mmUser model.User, channelId string, createdMeeting NewMeetingResponse, pluginConfig configuration) *model.Post {
+	return &model.Post{
+		Id:        "",
+		UserId:    mmUser.Id,
+		ChannelId: channelId,
+		Message:   "Meeting started at " + createdMeeting.JoinUrl + ".",
+		Type:      "custom_s4b",
+		Props: model.StringInterface{
+			"from_webhook":      "true",
+			"meeting_id":        createdMeeting.MeetingId,
+			"meeting_link":      createdMeeting.JoinUrl,
+			"meeting_personal":  true,
+			"meeting_status":    "STARTED",
+			"meeting_topic":     "Meeting created by " + mmUser.Username,
+			"override_icon_url": pluginConfig.Domain + "/plugins/skype4business/api/v1/assets/profile.png",
+			"override_username": "Skype for Business Plugin",
+		},
+	}
 }
 
 type ClientMock struct {
@@ -260,6 +463,16 @@ func (c *ClientMock) performDiscovery(url string) (*DiscoveryResponse, error) {
 
 	if ret.Get(0) != nil && ret.Get(1) == nil {
 		return ret.Get(0).(*DiscoveryResponse), nil
+	} else {
+		return nil, ret.Error(1)
+	}
+}
+
+func (c *ClientMock) performRequestAndGetAuthHeader(url string) (*string, error) {
+	ret := c.Called(url)
+
+	if ret.Get(0) != nil && ret.Get(1) == nil {
+		return ret.Get(0).(*string), nil
 	} else {
 		return nil, ret.Error(1)
 	}

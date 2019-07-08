@@ -13,20 +13,23 @@ import (
 )
 
 const (
-	URL_AUTHENTICATE            = "/auth"
-	URL_AUTHENTICATE_FAILING    = "/auth_fail"
-	URL_CREATE_NEW_APP          = "/new_app"
-	URL_CREATE_NEW_APP_FAILING  = "/new_app_fail"
-	URL_CREATE_NEW_MEETING      = "/new_meeting"
-	URL_PERFORM_DISCOVERY       = "/discovery"
-	URL_READ_USER_RESOURCE      = "/user"
-	URL_INVALID                 = "invalid://u r l"
-	TEST_TOKEN                  = "testtoken"
-	TEST_MY_ONLINE_MEETINGS_URL = "/ucwa/oauth/v1/applications/123/onlineMeetings/myOnlineMeetings"
-	TEST_ONLINE_MEETING_ID      = "FRA03I2T"
-	TEST_JOIN_URL               = "https://test.com/testcompany/testuser/FRA03I2T"
-	TEST_USER_URL               = "https://dc2.testcompany.com/Autodiscover/AutodiscoverService.svc/root/oauth/user"
-	TEST_APPLICATIONS_URL       = "https://dc2.testcompany.com/ucwa/oauth/v1/applications"
+	URL_AUTHENTICATE                 = "/auth"
+	URL_AUTHENTICATE_FAILING         = "/auth_fail"
+	URL_CREATE_NEW_APP               = "/new_app"
+	URL_CREATE_NEW_APP_FAILING       = "/new_app_fail"
+	URL_CREATE_NEW_MEETING           = "/new_meeting"
+	URL_PERFORM_DISCOVERY            = "/discovery"
+	URL_RESPONSE_WITH_AUTH_HEADER    = "/response_with_auth_header"
+	URL_RESPONSE_WITHOUT_AUTH_HEADER = "/response_without_auth_header"
+	URL_READ_USER_RESOURCE           = "/user"
+	URL_INVALID                      = "invalid://u r l"
+	TEST_TOKEN                       = "testtoken"
+	TEST_MY_ONLINE_MEETINGS_URL      = "/ucwa/oauth/v1/applications/123/onlineMeetings/myOnlineMeetings"
+	TEST_ONLINE_MEETING_ID           = "FRA03I2T"
+	TEST_JOIN_URL                    = "https://test.com/testcompany/testuser/FRA03I2T"
+	TEST_USER_URL                    = "https://dc2.testcompany.com/Autodiscover/AutodiscoverService.svc/root/oauth/user"
+	TEST_APPLICATIONS_URL            = "https://dc2.testcompany.com/ucwa/oauth/v1/applications"
+	TEST_AUTH_HEADER                 = "test_auth_header"
 )
 
 var (
@@ -108,6 +111,29 @@ func TestClient(t *testing.T) {
 		r, err = client.performDiscovery(URL_INVALID)
 
 		assert.NotNil(t, err)
+		assert.Nil(t, r)
+	})
+
+	t.Run("test performRequestAndGetAuthHeader", func(t *testing.T) {
+
+		r, err := client.performRequestAndGetAuthHeader(server.URL + URL_RESPONSE_WITH_AUTH_HEADER)
+
+		assert.Nil(t, err)
+		assert.NotNil(t, r)
+		assert.Equal(t, TEST_AUTH_HEADER, *r)
+
+		r, err = client.performRequestAndGetAuthHeader(URL_INVALID)
+		assert.NotNil(t, err)
+		assert.Nil(t, r)
+
+		r, err = client.performRequestAndGetAuthHeader("")
+		assert.NotNil(t, err)
+		assert.Nil(t, r)
+
+		r, err = client.performRequestAndGetAuthHeader(server.URL + URL_RESPONSE_WITHOUT_AUTH_HEADER)
+
+		assert.NotNil(t, err)
+		assert.Equal(t, "Response doesn't have WWW-AUTHENTICATE header!", err.Error())
 		assert.Nil(t, r)
 	})
 
@@ -225,6 +251,15 @@ func setupTestServer(t *testing.T) {
 			  }
 			}
 		`)
+	})
+
+	mux.HandleFunc(URL_RESPONSE_WITH_AUTH_HEADER, func(writer http.ResponseWriter, request *http.Request) {
+		writer.Header().Set("WWW-AUTHENTICATE", TEST_AUTH_HEADER)
+		writer.WriteHeader(http.StatusOK)
+	})
+
+	mux.HandleFunc(URL_RESPONSE_WITHOUT_AUTH_HEADER, func(writer http.ResponseWriter, request *http.Request) {
+		writer.WriteHeader(http.StatusOK)
 	})
 
 	mux.HandleFunc(URL_READ_USER_RESOURCE, func(writer http.ResponseWriter, request *http.Request) {
