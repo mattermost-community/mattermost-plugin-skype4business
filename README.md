@@ -4,6 +4,8 @@ Start and join voice calls, video calls and use screen sharing with your team me
 
 Clicking a video icon in a Mattermost channel posts a message that invites team members to join a Skype for Business meetings call.
 
+Originally developed by [kosgrz](https://github.com/kosgrz).
+
 ![image](https://user-images.githubusercontent.com/45372453/58598932-8035a400-827e-11e9-9b59-945302e39976.png)
  
 ## Installation
