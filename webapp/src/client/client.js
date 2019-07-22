@@ -168,21 +168,17 @@ export default class Client {
         const headers = {};
         headers['X-Requested-With'] = 'XMLHttpRequest';
 
-        try {
-            const response = await request.
-                post(this.createMeetingInServerVersionUrl).
-                send({
-                    channel_id: channelId,
-                    personal,
-                }).
-                set(headers).
-                type('application/json').
-                accept('application/json');
+        const response = await request.
+            post(this.createMeetingInServerVersionUrl).
+            send({
+                channel_id: channelId,
+                personal,
+            }).
+            set(headers).
+            type('application/json').
+            accept('application/json');
 
-            return response.body;
-        } catch (err) {
-            throw err;
-        }
+        return response.body;
     };
 
     doCreateMeetingInOnlineVersion = async (channelId, currentUserId, getAuthenticationResult, personal, topic) => {
@@ -290,18 +286,14 @@ export default class Client {
     sendPost = async (url, body, headers = {}) => {
         headers['X-Requested-With'] = 'XMLHttpRequest';
 
-        try {
-            const response = await request.
-                post(url).
-                send(body).
-                set(headers).
-                type('application/json').
-                accept('application/json');
+        const response = await request.
+            post(url).
+            send(body).
+            set(headers).
+            type('application/json').
+            accept('application/json');
 
-            return response.body;
-        } catch (err) {
-            throw err;
-        }
+        return response.body;
     };
 
     generateUuid4 = () => {
