@@ -25,7 +25,7 @@ const (
 	URLInvalid                   = "invalid://u r l"
 	TestToken                    = "testtoken"
 	TestMyOnlineMeetingsURL      = "/ucwa/oauth/v1/applications/123/onlineMeetings/myOnlineMeetings"
-	TestOnlineMeetingId          = "FRA03I2T"
+	TestOnlineMeetingID          = "FRA03I2T"
 	TestJoinURL                  = "https://test.com/testcompany/testuser/FRA03I2T"
 	TestUserURL                  = "https://dc2.testcompany.com/Autodiscover/AutodiscoverService.svc/root/oauth/user"
 	TestApplicationsURL          = "https://dc2.testcompany.com/ucwa/oauth/v1/applications"
@@ -91,7 +91,7 @@ func TestClient(t *testing.T) {
 
 		assert.Nil(t, err)
 		assert.NotNil(t, r)
-		assert.Equal(t, TestOnlineMeetingId, r.MeetingId)
+		assert.Equal(t, TestOnlineMeetingID, r.MeetingId)
 		assert.Equal(t, TestJoinURL, r.JoinUrl)
 
 		r, err = client.createNewMeeting(URLInvalid, math.Inf(1), TestToken)
@@ -235,7 +235,7 @@ func setupTestServer(t *testing.T) {
 	mux.HandleFunc(URLCreateNewMeeting, func(writer http.ResponseWriter, request *http.Request) {
 		writeResponse(t, writer, `
 			{
-			  "onlineMeetingId": "`+TestOnlineMeetingId+`",
+			  "onlineMeetingId": "`+TestOnlineMeetingID+`",
 			  "joinUrl": "`+TestJoinURL+`"
 			}
 		`)
