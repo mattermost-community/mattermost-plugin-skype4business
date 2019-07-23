@@ -13,23 +13,23 @@ import (
 )
 
 const (
-	UrlAuthenticate              = "/auth"
-	UrlAuthenticateFailing       = "/auth_fail"
-	UrlCreateNewApp              = "/new_app"
-	UrlCreateNewAppFailing       = "/new_app_fail"
-	UrlCreateNewMeeting          = "/new_meeting"
-	UrlPerformDiscovery          = "/discovery"
-	UrlResponseWithAuthHeader    = "/response_with_auth_header"
-	UrlResponseWithoutAuthHeader = "/response_without_auth_header"
-	UrlReadUserResource          = "/user"
-	UrlInvalid              = "invalid://u r l"
-	TestToken               = "testtoken"
-	TestMyOnlineMeetingsUrl = "/ucwa/oauth/v1/applications/123/onlineMeetings/myOnlineMeetings"
-	TestOnlineMeetingId     = "FRA03I2T"
-	TestJoinUrl             = "https://test.com/testcompany/testuser/FRA03I2T"
-	TestUserUrl             = "https://dc2.testcompany.com/Autodiscover/AutodiscoverService.svc/root/oauth/user"
-	TestApplicationsUrl     = "https://dc2.testcompany.com/ucwa/oauth/v1/applications"
-	TestAuthHeader          = "test_auth_header"
+	URLAuthenticate              = "/auth"
+	URLAuthenticateFailing       = "/auth_fail"
+	URLCreateNewApp              = "/new_app"
+	URLCreateNewAppFailing       = "/new_app_fail"
+	URLCreateNewMeeting          = "/new_meeting"
+	URLPerformDiscovery          = "/discovery"
+	URLResponseWithAuthHeader    = "/response_with_auth_header"
+	URLResponseWithoutAuthHeader = "/response_without_auth_header"
+	URLReadUserResource          = "/user"
+	URLInvalid                   = "invalid://u r l"
+	TestToken                    = "testtoken"
+	TestMyOnlineMeetingsURL      = "/ucwa/oauth/v1/applications/123/onlineMeetings/myOnlineMeetings"
+	TestOnlineMeetingId          = "FRA03I2T"
+	TestJoinURL                  = "https://test.com/testcompany/testuser/FRA03I2T"
+	TestUserURL                  = "https://dc2.testcompany.com/Autodiscover/AutodiscoverService.svc/root/oauth/user"
+	TestApplicationsURL          = "https://dc2.testcompany.com/ucwa/oauth/v1/applications"
+	TestAuthHeader               = "test_auth_header"
 )
 
 var (
@@ -44,18 +44,18 @@ func TestClient(t *testing.T) {
 
 	t.Run("test authenticate", func(t *testing.T) {
 
-		r, err := client.authenticate(server.URL+UrlAuthenticate, url.Values{})
+		r, err := client.authenticate(server.URL+URLAuthenticate, url.Values{})
 
 		assert.Nil(t, err)
 		assert.NotNil(t, r)
 		assert.Equal(t, TestToken, r.Access_token)
 
-		r, err = client.authenticate(UrlInvalid, url.Values{})
+		r, err = client.authenticate(URLInvalid, url.Values{})
 
 		assert.NotNil(t, err)
 		assert.Nil(t, r)
 
-		r, err = client.authenticate(server.URL+UrlAuthenticateFailing, url.Values{})
+		r, err = client.authenticate(server.URL+URLAuthenticateFailing, url.Values{})
 
 		assert.NotNil(t, err)
 		assert.Nil(t, r)
@@ -63,13 +63,13 @@ func TestClient(t *testing.T) {
 
 	t.Run("test createNewApplication", func(t *testing.T) {
 
-		r, err := client.createNewApplication(server.URL+UrlCreateNewApp, &NewApplicationRequest{}, TestToken)
+		r, err := client.createNewApplication(server.URL+URLCreateNewApp, &NewApplicationRequest{}, TestToken)
 
 		assert.Nil(t, err)
 		assert.NotNil(t, r)
-		assert.Equal(t, TestMyOnlineMeetingsUrl, r.Embedded.OnlineMeetings.OnlineMeetingsLinks.MyOnlineMeetings.Href)
+		assert.Equal(t, TestMyOnlineMeetingsURL, r.Embedded.OnlineMeetings.OnlineMeetingsLinks.MyOnlineMeetings.Href)
 
-		r, err = client.createNewApplication(UrlInvalid, nil, TestToken)
+		r, err = client.createNewApplication(URLInvalid, nil, TestToken)
 
 		assert.NotNil(t, err)
 		assert.Nil(t, r)
@@ -79,7 +79,7 @@ func TestClient(t *testing.T) {
 		assert.NotNil(t, err)
 		assert.Equal(t, "", r.Embedded.OnlineMeetings.OnlineMeetingsLinks.MyOnlineMeetings.Href)
 
-		r, err = client.createNewApplication(server.URL+UrlCreateNewAppFailing, nil, TestToken)
+		r, err = client.createNewApplication(server.URL+URLCreateNewAppFailing, nil, TestToken)
 
 		assert.NotNil(t, err)
 		assert.Equal(t, "", r.Embedded.OnlineMeetings.OnlineMeetingsLinks.MyOnlineMeetings.Href)
@@ -87,14 +87,14 @@ func TestClient(t *testing.T) {
 
 	t.Run("test createNewMeeting", func(t *testing.T) {
 
-		r, err := client.createNewMeeting(server.URL+UrlCreateNewMeeting, &NewMeetingRequest{}, TestToken)
+		r, err := client.createNewMeeting(server.URL+URLCreateNewMeeting, &NewMeetingRequest{}, TestToken)
 
 		assert.Nil(t, err)
 		assert.NotNil(t, r)
 		assert.Equal(t, TestOnlineMeetingId, r.MeetingId)
-		assert.Equal(t, TestJoinUrl, r.JoinUrl)
+		assert.Equal(t, TestJoinURL, r.JoinUrl)
 
-		r, err = client.createNewMeeting(UrlInvalid, math.Inf(1), TestToken)
+		r, err = client.createNewMeeting(URLInvalid, math.Inf(1), TestToken)
 
 		assert.NotNil(t, err)
 		assert.Nil(t, r)
@@ -102,13 +102,13 @@ func TestClient(t *testing.T) {
 
 	t.Run("test performDiscovery", func(t *testing.T) {
 
-		r, err := client.performDiscovery(server.URL + UrlPerformDiscovery)
+		r, err := client.performDiscovery(server.URL + URLPerformDiscovery)
 
 		assert.Nil(t, err)
 		assert.NotNil(t, r)
-		assert.Equal(t, TestUserUrl, r.Links.User.Href)
+		assert.Equal(t, TestUserURL, r.Links.User.Href)
 
-		r, err = client.performDiscovery(UrlInvalid)
+		r, err = client.performDiscovery(URLInvalid)
 
 		assert.NotNil(t, err)
 		assert.Nil(t, r)
@@ -116,13 +116,13 @@ func TestClient(t *testing.T) {
 
 	t.Run("test performRequestAndGetAuthHeader", func(t *testing.T) {
 
-		r, err := client.performRequestAndGetAuthHeader(server.URL + UrlResponseWithAuthHeader)
+		r, err := client.performRequestAndGetAuthHeader(server.URL + URLResponseWithAuthHeader)
 
 		assert.Nil(t, err)
 		assert.NotNil(t, r)
 		assert.Equal(t, TestAuthHeader, *r)
 
-		r, err = client.performRequestAndGetAuthHeader(UrlInvalid)
+		r, err = client.performRequestAndGetAuthHeader(URLInvalid)
 		assert.NotNil(t, err)
 		assert.Nil(t, r)
 
@@ -130,7 +130,7 @@ func TestClient(t *testing.T) {
 		assert.NotNil(t, err)
 		assert.Nil(t, r)
 
-		r, err = client.performRequestAndGetAuthHeader(server.URL + UrlResponseWithoutAuthHeader)
+		r, err = client.performRequestAndGetAuthHeader(server.URL + URLResponseWithoutAuthHeader)
 
 		assert.NotNil(t, err)
 		assert.Equal(t, "Response doesn't have WWW-AUTHENTICATE header!", err.Error())
@@ -139,13 +139,13 @@ func TestClient(t *testing.T) {
 
 	t.Run("test readUserResource", func(t *testing.T) {
 
-		r, err := client.readUserResource(server.URL+UrlReadUserResource, TestToken)
+		r, err := client.readUserResource(server.URL+URLReadUserResource, TestToken)
 
 		assert.Nil(t, err)
 		assert.NotNil(t, r)
-		assert.Equal(t, TestApplicationsUrl, r.Links.Applications.Href)
+		assert.Equal(t, TestApplicationsURL, r.Links.Applications.Href)
 
-		r, err = client.readUserResource(UrlInvalid, TestToken)
+		r, err = client.readUserResource(URLInvalid, TestToken)
 
 		assert.NotNil(t, err)
 		assert.Nil(t, r)
@@ -202,23 +202,23 @@ func TestClient(t *testing.T) {
 func setupTestServer(t *testing.T) {
 	mux := http.NewServeMux()
 
-	mux.HandleFunc(UrlAuthenticate, func(writer http.ResponseWriter, request *http.Request) {
+	mux.HandleFunc(URLAuthenticate, func(writer http.ResponseWriter, request *http.Request) {
 		writeResponse(t, writer, `{"access_token": "`+TestToken+`"}`)
 	})
 
-	mux.HandleFunc(UrlAuthenticateFailing, func(writer http.ResponseWriter, request *http.Request) {
+	mux.HandleFunc(URLAuthenticateFailing, func(writer http.ResponseWriter, request *http.Request) {
 		writer.Header().Set("X-Ms-Diagnostics", "wrong credentials")
 		writer.WriteHeader(http.StatusForbidden)
 	})
 
-	mux.HandleFunc(UrlCreateNewApp, func(writer http.ResponseWriter, request *http.Request) {
+	mux.HandleFunc(URLCreateNewApp, func(writer http.ResponseWriter, request *http.Request) {
 		writeResponse(t, writer, `
 			{
 			  "_embedded": {
 				"onlineMeetings": {
 				  "_links": {
 					"myOnlineMeetings": {
-					  "href": "`+TestMyOnlineMeetingsUrl+`"
+					  "href": "`+TestMyOnlineMeetingsURL+`"
 					}
 				  }
 				}
@@ -227,47 +227,47 @@ func setupTestServer(t *testing.T) {
 		`)
 	})
 
-	mux.HandleFunc(UrlCreateNewAppFailing, func(writer http.ResponseWriter, request *http.Request) {
+	mux.HandleFunc(URLCreateNewAppFailing, func(writer http.ResponseWriter, request *http.Request) {
 		writer.Header().Set("X-Ms-Diagnostics", "something went wrong")
 		writer.WriteHeader(http.StatusInternalServerError)
 	})
 
-	mux.HandleFunc(UrlCreateNewMeeting, func(writer http.ResponseWriter, request *http.Request) {
+	mux.HandleFunc(URLCreateNewMeeting, func(writer http.ResponseWriter, request *http.Request) {
 		writeResponse(t, writer, `
 			{
 			  "onlineMeetingId": "`+TestOnlineMeetingId+`",
-			  "joinUrl": "`+TestJoinUrl+`"
+			  "joinUrl": "`+TestJoinURL+`"
 			}
 		`)
 	})
 
-	mux.HandleFunc(UrlPerformDiscovery, func(writer http.ResponseWriter, request *http.Request) {
+	mux.HandleFunc(URLPerformDiscovery, func(writer http.ResponseWriter, request *http.Request) {
 		writeResponse(t, writer, `
 			{
 			  "_links": {
 				"user": {
-				  "href": "`+TestUserUrl+`"
+				  "href": "`+TestUserURL+`"
 				}
 			  }
 			}
 		`)
 	})
 
-	mux.HandleFunc(UrlResponseWithAuthHeader, func(writer http.ResponseWriter, request *http.Request) {
+	mux.HandleFunc(URLResponseWithAuthHeader, func(writer http.ResponseWriter, request *http.Request) {
 		writer.Header().Set("WWW-AUTHENTICATE", TestAuthHeader)
 		writer.WriteHeader(http.StatusOK)
 	})
 
-	mux.HandleFunc(UrlResponseWithoutAuthHeader, func(writer http.ResponseWriter, request *http.Request) {
+	mux.HandleFunc(URLResponseWithoutAuthHeader, func(writer http.ResponseWriter, request *http.Request) {
 		writer.WriteHeader(http.StatusOK)
 	})
 
-	mux.HandleFunc(UrlReadUserResource, func(writer http.ResponseWriter, request *http.Request) {
+	mux.HandleFunc(URLReadUserResource, func(writer http.ResponseWriter, request *http.Request) {
 		writeResponse(t, writer, `
 			{
 			  "_links": {
 				"applications": {
-				  "href": "`+TestApplicationsUrl+`",
+				  "href": "`+TestApplicationsURL+`",
 				  "revision": "2"
 				}
 			  }
