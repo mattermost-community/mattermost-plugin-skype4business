@@ -23,13 +23,13 @@ import (
 )
 
 const (
-	POST_MEETING_KEY               = "post_meeting_"
-	POST_MEETING_TYPE              = "custom_s4b"
-	POST_MEETING_OVERRIDE_USERNAME = "Skype for Business Plugin"
-	NEW_APPLICATION_USER_AGENT     = "mm_skype4b_plugin"
-	NEW_APPLICATION_CULTURE        = "en-US"
-	WS_EVENT_AUTHENTICATED         = "authenticated"
-	ROOT_URL_KEY                   = "root_url"
+	PostMeetingKey              = "post_meeting_"
+	PostMeetingType             = "custom_s4b"
+	PostMeetingOverrideUsername = "Skype for Business Plugin"
+	NewApplicationUserAgent     = "mm_skype4b_plugin"
+	NewApplicationCulture       = "en-US"
+	WsEventAuthenticated        = "authenticated"
+	RootUrlKey                  = "root_url"
 )
 
 type IClient interface {
@@ -166,7 +166,7 @@ func (p *Plugin) completeAuthorizeInADD(w http.ResponseWriter, r *http.Request) 
 		fmt.Println("cannot delete stored state", err)
 	}
 
-	p.API.PublishWebSocketEvent(WS_EVENT_AUTHENTICATED, map[string]interface{}{
+	p.API.PublishWebSocketEvent(WsEventAuthenticated, map[string]interface{}{
 		"token": idToken,
 		"state": state,
 	}, &model.WebsocketBroadcast{
@@ -293,13 +293,13 @@ func (p *Plugin) handleRegisterMeetingFromOnlineVersion(w http.ResponseWriter, r
 		UserId:    user.Id,
 		ChannelId: req.ChannelId,
 		Message:   fmt.Sprintf("Meeting started at %s.", req.MeetingURL),
-		Type:      POST_MEETING_TYPE,
+		Type:      PostMeetingType,
 		Props: map[string]interface{}{
 			"meeting_id":        req.MeetingId,
 			"meeting_link":      req.MeetingURL,
 			"meeting_personal":  req.Personal,
 			"meeting_topic":     req.Topic,
-			"override_username": POST_MEETING_OVERRIDE_USERNAME,
+			"override_username": PostMeetingOverrideUsername,
 			"meeting_status":    "STARTED",
 			"from_webhook":      "true",
 			"override_icon_url": path.Join(*serverConfiguration.ServiceSettings.SiteURL, "plugins", manifest.ID, "api", "v1", "assets", "profile.png"),
@@ -311,7 +311,7 @@ func (p *Plugin) handleRegisterMeetingFromOnlineVersion(w http.ResponseWriter, r
 		http.Error(w, err.Error(), err.StatusCode)
 		return
 	} else {
-		err = p.API.KVSet(fmt.Sprintf("%v%v", POST_MEETING_KEY, req.MeetingId), []byte(post.Id))
+		err = p.API.KVSet(fmt.Sprintf("%v%v", PostMeetingKey, req.MeetingId), []byte(post.Id))
 		if err != nil {
 			fmt.Println(err.Error())
 			http.Error(w, err.Error(), err.StatusCode)
@@ -388,12 +388,12 @@ func (p *Plugin) handleCreateMeetingInServerVersion(w http.ResponseWriter, r *ht
 		UserId:    user.Id,
 		ChannelId: req.ChannelId,
 		Message:   fmt.Sprintf("Meeting started at %s.", newMeetingResponse.JoinUrl),
-		Type:      POST_MEETING_TYPE,
+		Type:      PostMeetingType,
 		Props: map[string]interface{}{
 			"meeting_id":        newMeetingResponse.MeetingId,
 			"meeting_link":      newMeetingResponse.JoinUrl,
 			"meeting_personal":  req.Personal,
-			"override_username": POST_MEETING_OVERRIDE_USERNAME,
+			"override_username": PostMeetingOverrideUsername,
 			"meeting_topic":     "Meeting created by " + user.Username,
 			"meeting_status":    "STARTED",
 			"from_webhook":      "true",
@@ -406,7 +406,7 @@ func (p *Plugin) handleCreateMeetingInServerVersion(w http.ResponseWriter, r *ht
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	} else {
-		err = p.API.KVSet(fmt.Sprintf("%v%v", POST_MEETING_KEY, newMeetingResponse.MeetingId), []byte(post.Id))
+		err = p.API.KVSet(fmt.Sprintf("%v%v", PostMeetingKey, newMeetingResponse.MeetingId), []byte(post.Id))
 		if err != nil {
 			mlog.Error("Error writing meeting id to the database: " + err.Error())
 			http.Error(w, err.Error(), http.StatusInternalServerError)
@@ -454,8 +454,8 @@ func (p *Plugin) fetchOnlineMeetingsUrl() (*ApplicationState, *APIError) {
 	newApplicationResponse, err := p.client.createNewApplication(
 		applicationState.ApplicationsUrl,
 		NewApplicationRequest{
-			UserAgent:  NEW_APPLICATION_USER_AGENT,
-			Culture:    NEW_APPLICATION_CULTURE,
+			UserAgent:  NewApplicationUserAgent,
+			Culture:    NewApplicationCulture,
 			EndpointId: "123",
 		},
 		applicationState.Token,
@@ -539,7 +539,7 @@ func (p *Plugin) getApplicationState(discoveryUrl string) (*ApplicationState, *A
 }
 
 func (p *Plugin) getRootUrl() (*string, *APIError) {
-	rootUrlBytes, appErr := p.API.KVGet(ROOT_URL_KEY)
+	rootUrlBytes, appErr := p.API.KVGet(RootUrlKey)
 	if appErr != nil {
 		return nil, &APIError{Message: "Cannot fetch the root url from the database: " + appErr.Error()}
 	}
@@ -554,7 +554,7 @@ func (p *Plugin) getRootUrl() (*string, *APIError) {
 		return nil, err
 	}
 
-	_ = p.API.KVSet(ROOT_URL_KEY, []byte(*rootUrl))
+	_ = p.API.KVSet(RootUrlKey, []byte(*rootUrl))
 
 	return rootUrl, nil
 }
