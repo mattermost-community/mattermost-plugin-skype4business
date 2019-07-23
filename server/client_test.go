@@ -13,23 +13,23 @@ import (
 )
 
 const (
-	URL_AUTHENTICATE                 = "/auth"
-	URL_AUTHENTICATE_FAILING         = "/auth_fail"
-	URL_CREATE_NEW_APP               = "/new_app"
-	URL_CREATE_NEW_APP_FAILING       = "/new_app_fail"
-	URL_CREATE_NEW_MEETING           = "/new_meeting"
-	URL_PERFORM_DISCOVERY            = "/discovery"
-	URL_RESPONSE_WITH_AUTH_HEADER    = "/response_with_auth_header"
-	URL_RESPONSE_WITHOUT_AUTH_HEADER = "/response_without_auth_header"
-	URL_READ_USER_RESOURCE           = "/user"
-	URL_INVALID                      = "invalid://u r l"
-	TEST_TOKEN                       = "testtoken"
-	TEST_MY_ONLINE_MEETINGS_URL      = "/ucwa/oauth/v1/applications/123/onlineMeetings/myOnlineMeetings"
-	TEST_ONLINE_MEETING_ID           = "FRA03I2T"
-	TEST_JOIN_URL                    = "https://test.com/testcompany/testuser/FRA03I2T"
-	TEST_USER_URL                    = "https://dc2.testcompany.com/Autodiscover/AutodiscoverService.svc/root/oauth/user"
-	TEST_APPLICATIONS_URL            = "https://dc2.testcompany.com/ucwa/oauth/v1/applications"
-	TEST_AUTH_HEADER                 = "test_auth_header"
+	UrlAuthenticate              = "/auth"
+	UrlAuthenticateFailing       = "/auth_fail"
+	UrlCreateNewApp              = "/new_app"
+	UrlCreateNewAppFailing       = "/new_app_fail"
+	UrlCreateNewMeeting          = "/new_meeting"
+	UrlPerformDiscovery          = "/discovery"
+	UrlResponseWithAuthHeader    = "/response_with_auth_header"
+	UrlResponseWithoutAuthHeader = "/response_without_auth_header"
+	UrlReadUserResource          = "/user"
+	UrlInvalid              = "invalid://u r l"
+	TestToken               = "testtoken"
+	TestMyOnlineMeetingsUrl = "/ucwa/oauth/v1/applications/123/onlineMeetings/myOnlineMeetings"
+	TestOnlineMeetingId     = "FRA03I2T"
+	TestJoinUrl             = "https://test.com/testcompany/testuser/FRA03I2T"
+	TestUserUrl             = "https://dc2.testcompany.com/Autodiscover/AutodiscoverService.svc/root/oauth/user"
+	TestApplicationsUrl     = "https://dc2.testcompany.com/ucwa/oauth/v1/applications"
+	TestAuthHeader          = "test_auth_header"
 )
 
 var (
@@ -44,18 +44,18 @@ func TestClient(t *testing.T) {
 
 	t.Run("test authenticate", func(t *testing.T) {
 
-		r, err := client.authenticate(server.URL+URL_AUTHENTICATE, url.Values{})
+		r, err := client.authenticate(server.URL+UrlAuthenticate, url.Values{})
 
 		assert.Nil(t, err)
 		assert.NotNil(t, r)
-		assert.Equal(t, TEST_TOKEN, r.Access_token)
+		assert.Equal(t, TestToken, r.Access_token)
 
-		r, err = client.authenticate(URL_INVALID, url.Values{})
+		r, err = client.authenticate(UrlInvalid, url.Values{})
 
 		assert.NotNil(t, err)
 		assert.Nil(t, r)
 
-		r, err = client.authenticate(server.URL+URL_AUTHENTICATE_FAILING, url.Values{})
+		r, err = client.authenticate(server.URL+UrlAuthenticateFailing, url.Values{})
 
 		assert.NotNil(t, err)
 		assert.Nil(t, r)
@@ -63,23 +63,23 @@ func TestClient(t *testing.T) {
 
 	t.Run("test createNewApplication", func(t *testing.T) {
 
-		r, err := client.createNewApplication(server.URL+URL_CREATE_NEW_APP, &NewApplicationRequest{}, TEST_TOKEN)
+		r, err := client.createNewApplication(server.URL+UrlCreateNewApp, &NewApplicationRequest{}, TestToken)
 
 		assert.Nil(t, err)
 		assert.NotNil(t, r)
-		assert.Equal(t, TEST_MY_ONLINE_MEETINGS_URL, r.Embedded.OnlineMeetings.OnlineMeetingsLinks.MyOnlineMeetings.Href)
+		assert.Equal(t, TestMyOnlineMeetingsUrl, r.Embedded.OnlineMeetings.OnlineMeetingsLinks.MyOnlineMeetings.Href)
 
-		r, err = client.createNewApplication(URL_INVALID, nil, TEST_TOKEN)
+		r, err = client.createNewApplication(UrlInvalid, nil, TestToken)
 
 		assert.NotNil(t, err)
 		assert.Nil(t, r)
 
-		r, err = client.createNewApplication("", nil, TEST_TOKEN)
+		r, err = client.createNewApplication("", nil, TestToken)
 
 		assert.NotNil(t, err)
 		assert.Equal(t, "", r.Embedded.OnlineMeetings.OnlineMeetingsLinks.MyOnlineMeetings.Href)
 
-		r, err = client.createNewApplication(server.URL+URL_CREATE_NEW_APP_FAILING, nil, TEST_TOKEN)
+		r, err = client.createNewApplication(server.URL+UrlCreateNewAppFailing, nil, TestToken)
 
 		assert.NotNil(t, err)
 		assert.Equal(t, "", r.Embedded.OnlineMeetings.OnlineMeetingsLinks.MyOnlineMeetings.Href)
@@ -87,14 +87,14 @@ func TestClient(t *testing.T) {
 
 	t.Run("test createNewMeeting", func(t *testing.T) {
 
-		r, err := client.createNewMeeting(server.URL+URL_CREATE_NEW_MEETING, &NewMeetingRequest{}, TEST_TOKEN)
+		r, err := client.createNewMeeting(server.URL+UrlCreateNewMeeting, &NewMeetingRequest{}, TestToken)
 
 		assert.Nil(t, err)
 		assert.NotNil(t, r)
-		assert.Equal(t, TEST_ONLINE_MEETING_ID, r.MeetingId)
-		assert.Equal(t, TEST_JOIN_URL, r.JoinUrl)
+		assert.Equal(t, TestOnlineMeetingId, r.MeetingId)
+		assert.Equal(t, TestJoinUrl, r.JoinUrl)
 
-		r, err = client.createNewMeeting(URL_INVALID, math.Inf(1), TEST_TOKEN)
+		r, err = client.createNewMeeting(UrlInvalid, math.Inf(1), TestToken)
 
 		assert.NotNil(t, err)
 		assert.Nil(t, r)
@@ -102,13 +102,13 @@ func TestClient(t *testing.T) {
 
 	t.Run("test performDiscovery", func(t *testing.T) {
 
-		r, err := client.performDiscovery(server.URL + URL_PERFORM_DISCOVERY)
+		r, err := client.performDiscovery(server.URL + UrlPerformDiscovery)
 
 		assert.Nil(t, err)
 		assert.NotNil(t, r)
-		assert.Equal(t, TEST_USER_URL, r.Links.User.Href)
+		assert.Equal(t, TestUserUrl, r.Links.User.Href)
 
-		r, err = client.performDiscovery(URL_INVALID)
+		r, err = client.performDiscovery(UrlInvalid)
 
 		assert.NotNil(t, err)
 		assert.Nil(t, r)
@@ -116,13 +116,13 @@ func TestClient(t *testing.T) {
 
 	t.Run("test performRequestAndGetAuthHeader", func(t *testing.T) {
 
-		r, err := client.performRequestAndGetAuthHeader(server.URL + URL_RESPONSE_WITH_AUTH_HEADER)
+		r, err := client.performRequestAndGetAuthHeader(server.URL + UrlResponseWithAuthHeader)
 
 		assert.Nil(t, err)
 		assert.NotNil(t, r)
-		assert.Equal(t, TEST_AUTH_HEADER, *r)
+		assert.Equal(t, TestAuthHeader, *r)
 
-		r, err = client.performRequestAndGetAuthHeader(URL_INVALID)
+		r, err = client.performRequestAndGetAuthHeader(UrlInvalid)
 		assert.NotNil(t, err)
 		assert.Nil(t, r)
 
@@ -130,7 +130,7 @@ func TestClient(t *testing.T) {
 		assert.NotNil(t, err)
 		assert.Nil(t, r)
 
-		r, err = client.performRequestAndGetAuthHeader(server.URL + URL_RESPONSE_WITHOUT_AUTH_HEADER)
+		r, err = client.performRequestAndGetAuthHeader(server.URL + UrlResponseWithoutAuthHeader)
 
 		assert.NotNil(t, err)
 		assert.Equal(t, "Response doesn't have WWW-AUTHENTICATE header!", err.Error())
@@ -139,13 +139,13 @@ func TestClient(t *testing.T) {
 
 	t.Run("test readUserResource", func(t *testing.T) {
 
-		r, err := client.readUserResource(server.URL+URL_READ_USER_RESOURCE, TEST_TOKEN)
+		r, err := client.readUserResource(server.URL+UrlReadUserResource, TestToken)
 
 		assert.Nil(t, err)
 		assert.NotNil(t, r)
-		assert.Equal(t, TEST_APPLICATIONS_URL, r.Links.Applications.Href)
+		assert.Equal(t, TestApplicationsUrl, r.Links.Applications.Href)
 
-		r, err = client.readUserResource(URL_INVALID, TEST_TOKEN)
+		r, err = client.readUserResource(UrlInvalid, TestToken)
 
 		assert.NotNil(t, err)
 		assert.Nil(t, r)
@@ -202,23 +202,23 @@ func TestClient(t *testing.T) {
 func setupTestServer(t *testing.T) {
 	mux := http.NewServeMux()
 
-	mux.HandleFunc(URL_AUTHENTICATE, func(writer http.ResponseWriter, request *http.Request) {
-		writeResponse(t, writer, `{"access_token": "`+TEST_TOKEN+`"}`)
+	mux.HandleFunc(UrlAuthenticate, func(writer http.ResponseWriter, request *http.Request) {
+		writeResponse(t, writer, `{"access_token": "`+TestToken+`"}`)
 	})
 
-	mux.HandleFunc(URL_AUTHENTICATE_FAILING, func(writer http.ResponseWriter, request *http.Request) {
+	mux.HandleFunc(UrlAuthenticateFailing, func(writer http.ResponseWriter, request *http.Request) {
 		writer.Header().Set("X-Ms-Diagnostics", "wrong credentials")
 		writer.WriteHeader(http.StatusForbidden)
 	})
 
-	mux.HandleFunc(URL_CREATE_NEW_APP, func(writer http.ResponseWriter, request *http.Request) {
+	mux.HandleFunc(UrlCreateNewApp, func(writer http.ResponseWriter, request *http.Request) {
 		writeResponse(t, writer, `
 			{
 			  "_embedded": {
 				"onlineMeetings": {
 				  "_links": {
 					"myOnlineMeetings": {
-					  "href": "`+TEST_MY_ONLINE_MEETINGS_URL+`"
+					  "href": "`+TestMyOnlineMeetingsUrl+`"
 					}
 				  }
 				}
@@ -227,47 +227,47 @@ func setupTestServer(t *testing.T) {
 		`)
 	})
 
-	mux.HandleFunc(URL_CREATE_NEW_APP_FAILING, func(writer http.ResponseWriter, request *http.Request) {
+	mux.HandleFunc(UrlCreateNewAppFailing, func(writer http.ResponseWriter, request *http.Request) {
 		writer.Header().Set("X-Ms-Diagnostics", "something went wrong")
 		writer.WriteHeader(http.StatusInternalServerError)
 	})
 
-	mux.HandleFunc(URL_CREATE_NEW_MEETING, func(writer http.ResponseWriter, request *http.Request) {
+	mux.HandleFunc(UrlCreateNewMeeting, func(writer http.ResponseWriter, request *http.Request) {
 		writeResponse(t, writer, `
 			{
-			  "onlineMeetingId": "`+TEST_ONLINE_MEETING_ID+`",
-			  "joinUrl": "`+TEST_JOIN_URL+`"
+			  "onlineMeetingId": "`+TestOnlineMeetingId+`",
+			  "joinUrl": "`+TestJoinUrl+`"
 			}
 		`)
 	})
 
-	mux.HandleFunc(URL_PERFORM_DISCOVERY, func(writer http.ResponseWriter, request *http.Request) {
+	mux.HandleFunc(UrlPerformDiscovery, func(writer http.ResponseWriter, request *http.Request) {
 		writeResponse(t, writer, `
 			{
 			  "_links": {
 				"user": {
-				  "href": "`+TEST_USER_URL+`"
+				  "href": "`+TestUserUrl+`"
 				}
 			  }
 			}
 		`)
 	})
 
-	mux.HandleFunc(URL_RESPONSE_WITH_AUTH_HEADER, func(writer http.ResponseWriter, request *http.Request) {
-		writer.Header().Set("WWW-AUTHENTICATE", TEST_AUTH_HEADER)
+	mux.HandleFunc(UrlResponseWithAuthHeader, func(writer http.ResponseWriter, request *http.Request) {
+		writer.Header().Set("WWW-AUTHENTICATE", TestAuthHeader)
 		writer.WriteHeader(http.StatusOK)
 	})
 
-	mux.HandleFunc(URL_RESPONSE_WITHOUT_AUTH_HEADER, func(writer http.ResponseWriter, request *http.Request) {
+	mux.HandleFunc(UrlResponseWithoutAuthHeader, func(writer http.ResponseWriter, request *http.Request) {
 		writer.WriteHeader(http.StatusOK)
 	})
 
-	mux.HandleFunc(URL_READ_USER_RESOURCE, func(writer http.ResponseWriter, request *http.Request) {
+	mux.HandleFunc(UrlReadUserResource, func(writer http.ResponseWriter, request *http.Request) {
 		writeResponse(t, writer, `
 			{
 			  "_links": {
 				"applications": {
-				  "href": "`+TEST_APPLICATIONS_URL+`",
+				  "href": "`+TestApplicationsUrl+`",
 				  "revision": "2"
 				}
 			  }
