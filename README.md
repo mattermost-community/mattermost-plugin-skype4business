@@ -1,5 +1,8 @@
 # Mattermost Skype for Business Plugin
 
+[![Build Status](https://img.shields.io/circleci/project/github/mattermost/mattermost-plugin-skype4business/master.svg)](https://circleci.com/gh/mattermost/mattermost-plugin-skype4business)
+[![Code Coverage](https://img.shields.io/codecov/c/github/mattermost/mattermost-plugin-skype4business/master.svg)](https://codecov.io/gh/mattermost/mattermost-plugin-skype4business)
+
 Start and join voice calls, video calls and use screen sharing with your team members with a Skype for Business plugin for Mattermost.
 
 Clicking a video icon in a Mattermost channel posts a message that invites team members to join a Skype for Business meetings call.
