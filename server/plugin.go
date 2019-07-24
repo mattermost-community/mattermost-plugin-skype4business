@@ -320,7 +320,6 @@ func (p *Plugin) handleRegisterMeetingFromOnlineVersion(w http.ResponseWriter, r
 		return
 	}
 
-
 	w.Write([]byte(fmt.Sprintf("%v", req.MeetingId)))
 }
 
