@@ -29,7 +29,7 @@ const (
 	NewApplicationUserAgent     = "mm_skype4b_plugin"
 	NewApplicationCulture       = "en-US"
 	WsEventAuthenticated        = "authenticated"
-	RootUrlKey                  = "root_url"
+	RootURLKey                  = "root_url"
 )
 
 type IClient interface {
@@ -150,13 +150,13 @@ func (p *Plugin) completeAuthorizeInADD(w http.ResponseWriter, r *http.Request) 
 		return
 	}
 
-	userId, err := p.API.KVGet(state)
+	userID, err := p.API.KVGet(state)
 
 	if err != nil {
 		fmt.Println(err.Message)
 		http.Error(w, "cannot get stored state", http.StatusBadRequest)
 		return
-	} else if userId == nil {
+	} else if userID == nil {
 		http.Error(w, "missing stored state", http.StatusBadRequest)
 		return
 	}
@@ -170,7 +170,7 @@ func (p *Plugin) completeAuthorizeInADD(w http.ResponseWriter, r *http.Request) 
 		"token": idToken,
 		"state": state,
 	}, &model.WebsocketBroadcast{
-		UserId: strings.TrimSpace(string(userId)),
+		UserId: strings.TrimSpace(string(userID)),
 	})
 
 	html := `
@@ -542,7 +542,7 @@ func (p *Plugin) getApplicationState(discoveryURL string) (*ApplicationState, *A
 }
 
 func (p *Plugin) getRootURL() (*string, *APIError) {
-	rootURLBytes, appErr := p.API.KVGet(RootUrlKey)
+	rootURLBytes, appErr := p.API.KVGet(RootURLKey)
 	if appErr != nil {
 		return nil, &APIError{Message: "Cannot fetch the root url from the database: " + appErr.Error()}
 	}
@@ -557,7 +557,7 @@ func (p *Plugin) getRootURL() (*string, *APIError) {
 		return nil, err
 	}
 
-	_ = p.API.KVSet(RootUrlKey, []byte(*rootURL))
+	_ = p.API.KVSet(RootURLKey, []byte(*rootURL))
 
 	return rootURL, nil
 }

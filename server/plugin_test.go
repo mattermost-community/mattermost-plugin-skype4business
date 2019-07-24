@@ -234,7 +234,7 @@ func makeMocks(mmChannelId string, mmUser model.User, splitDomain bool) Mocks {
 	api.On("GetUser", mmUser.Id).Return(&mmUser, (*model.AppError)(nil)).Times(1)
 	api.On("GetChannelMember", mmChannelId, mmUser.Id).
 		Return(&model.ChannelMember{}, (*model.AppError)(nil)).Times(1)
-	api.On("KVGet", RootUrlKey).
+	api.On("KVGet", RootURLKey).
 		Return([]byte(discoveryUrlToReturn), (*model.AppError)(nil)).Times(1)
 	api.On("CreatePost", expectedPost).
 		Return(&model.Post{}, (*model.AppError)(nil)).Times(1)
