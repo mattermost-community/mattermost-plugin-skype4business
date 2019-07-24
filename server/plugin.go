@@ -156,7 +156,9 @@ func (p *Plugin) completeAuthorizeInADD(w http.ResponseWriter, r *http.Request) 
 		fmt.Println(err.Message)
 		http.Error(w, "cannot get stored state", http.StatusBadRequest)
 		return
-	} else if userID == nil {
+	}
+
+	if userID == nil {
 		http.Error(w, "missing stored state", http.StatusBadRequest)
 		return
 	}
@@ -256,7 +258,9 @@ func (p *Plugin) handleRegisterMeetingFromOnlineVersion(w http.ResponseWriter, r
 		fmt.Println(err.Error())
 		http.Error(w, err.Error(), err.StatusCode)
 		return
-	} else if user == nil {
+	}
+
+	if user == nil {
 		fmt.Println("User is nil")
 		http.Error(w, "User is nil", http.StatusUnauthorized)
 		return
@@ -267,7 +271,9 @@ func (p *Plugin) handleRegisterMeetingFromOnlineVersion(w http.ResponseWriter, r
 		fmt.Println("Cannot fetch configuration")
 		http.Error(w, "Forbidden", http.StatusForbidden)
 		return
-	} else if config.ProductType == PRODUCT_TYPE_SERVER {
+	}
+
+	if config.ProductType == PRODUCT_TYPE_SERVER {
 		fmt.Println("Server version is set")
 		http.Error(w, "Forbidden", http.StatusForbidden)
 		return
@@ -345,7 +351,9 @@ func (p *Plugin) handleCreateMeetingInServerVersion(w http.ResponseWriter, r *ht
 		mlog.Error("Error getting user: " + appError.Error())
 		http.Error(w, appError.Error(), appError.StatusCode)
 		return
-	} else if user == nil {
+	}
+
+	if user == nil {
 		mlog.Error("User with that id doesn't exist: " + userID)
 		http.Error(w, "User is nil", http.StatusUnauthorized)
 		return
@@ -356,7 +364,9 @@ func (p *Plugin) handleCreateMeetingInServerVersion(w http.ResponseWriter, r *ht
 		mlog.Error("Error decoding JSON body: " + err.Error())
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
-	} else if _, err := p.API.GetChannelMember(req.ChannelId, user.Id); err != nil {
+	}
+
+	if _, err := p.API.GetChannelMember(req.ChannelId, user.Id); err != nil {
 		mlog.Error("Error getting channel member: " + err.Error())
 		http.Error(w, "Forbidden", http.StatusForbidden)
 		return
@@ -556,7 +566,10 @@ func (p *Plugin) getRootURL() (*string, *APIError) {
 		return nil, err
 	}
 
-	_ = p.API.KVSet(RootURLKey, []byte(*rootURL))
+	_, err = p.API.KVSet(RootURLKey, []byte(*rootURL))
+	if err != nil {
+		return nil,err
+	}
 
 	return rootURL, nil
 }
