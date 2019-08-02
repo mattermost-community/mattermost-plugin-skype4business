@@ -408,7 +408,8 @@ func (p *Plugin) handleCreateMeetingInServerVersion(w http.ResponseWriter, r *ht
 		return
 	}
 
-	if appErr = p.API.KVSet(fmt.Sprintf("%v%v", POST_MEETING_KEY, newMeetingResponse.MeetingId), []byte(post.Id)); appErr != nil {
+	appErr = p.API.KVSet(fmt.Sprintf("%v%v", POST_MEETING_KEY, newMeetingResponse.MeetingId), []byte(post.Id))
+	if appErr != nil {
 		mlog.Error("Error writing meeting id to the database: " + appErr.Error())
 		http.Error(w, appErr.Error(), http.StatusInternalServerError)
 		return
