@@ -251,10 +251,10 @@ func (p *Plugin) handleRegisterMeetingFromOnlineVersion(w http.ResponseWriter, r
 		return
 	}
 
-	user, err := p.API.GetUser(userId)
-	if err != nil {
-		fmt.Println(err.Error())
-		http.Error(w, err.Error(), err.StatusCode)
+	user, appErr := p.API.GetUser(userId)
+	if appErr != nil {
+		fmt.Println(appErr.Error())
+		http.Error(w, appErr.Error(), appErr.StatusCode)
 		return
 	} else if user == nil {
 		fmt.Println("User is nil")
@@ -281,8 +281,8 @@ func (p *Plugin) handleRegisterMeetingFromOnlineVersion(w http.ResponseWriter, r
 		return
 	}
 
-	if _, err := p.API.GetChannelMember(req.ChannelId, user.Id); err != nil {
-		fmt.Println(err.Error())
+	if _, appErr = p.API.GetChannelMember(req.ChannelId, user.Id); appErr != nil {
+		fmt.Println(appErr.Error())
 		http.Error(w, "Forbidden", http.StatusForbidden)
 		return
 	}
@@ -306,17 +306,17 @@ func (p *Plugin) handleRegisterMeetingFromOnlineVersion(w http.ResponseWriter, r
 		},
 	}
 
-	if post, err := p.API.CreatePost(post); err != nil {
-		fmt.Println(err.Error())
-		http.Error(w, err.Error(), err.StatusCode)
+	post, appErr = p.API.CreatePost(post)
+	if appErr != nil {
+		fmt.Println(appErr.Error())
+		http.Error(w, appErr.Error(), appErr.StatusCode)
 		return
-	} else {
-		err = p.API.KVSet(fmt.Sprintf("%v%v", POST_MEETING_KEY, req.MeetingId), []byte(post.Id))
-		if err != nil {
-			fmt.Println(err.Error())
-			http.Error(w, err.Error(), err.StatusCode)
-			return
-		}
+	}
+
+	if appErr = p.API.KVSet(fmt.Sprintf("%v%v", POST_MEETING_KEY, req.MeetingId), []byte(post.Id)); appErr != nil {
+		fmt.Println(appErr.Error())
+		http.Error(w, appErr.Error(), appErr.StatusCode)
+		return
 	}
 
 	w.Write([]byte(fmt.Sprintf("%v", req.MeetingId)))
@@ -401,17 +401,18 @@ func (p *Plugin) handleCreateMeetingInServerVersion(w http.ResponseWriter, r *ht
 		},
 	}
 
-	if post, err := p.API.CreatePost(post); err != nil {
-		mlog.Error("Error creating a new post with the new meeting: " + err.Error())
-		http.Error(w, err.Error(), http.StatusInternalServerError)
+	post, appErr := p.API.CreatePost(post)
+	if appErr != nil {
+		mlog.Error("Error creating a new post with the new meeting: " + appErr.Error())
+		http.Error(w, appErr.Error(), http.StatusInternalServerError)
 		return
-	} else {
-		err = p.API.KVSet(fmt.Sprintf("%v%v", POST_MEETING_KEY, newMeetingResponse.MeetingId), []byte(post.Id))
-		if err != nil {
-			mlog.Error("Error writing meeting id to the database: " + err.Error())
-			http.Error(w, err.Error(), http.StatusInternalServerError)
-			return
-		}
+	}
+
+	appErr = p.API.KVSet(fmt.Sprintf("%v%v", POST_MEETING_KEY, newMeetingResponse.MeetingId), []byte(post.Id))
+	if appErr != nil {
+		mlog.Error("Error writing meeting id to the database: " + appErr.Error())
+		http.Error(w, appErr.Error(), http.StatusInternalServerError)
+		return
 	}
 
 	if err := json.NewEncoder(w).Encode(&newMeetingResponse); err != nil {
