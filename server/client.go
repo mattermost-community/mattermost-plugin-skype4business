@@ -4,18 +4,21 @@ import (
 	"bytes"
 	"crypto/tls"
 	"encoding/json"
-	"github.com/pkg/errors"
 	"io"
 	"io/ioutil"
 	"net/http"
 	"net/url"
 	"strings"
+
+	"github.com/pkg/errors"
 )
 
+// Client is a new HTTP Client to talk to the Skype server
 type Client struct {
 	httpClient *http.Client
 }
 
+// NewClient returns a new Client
 func NewClient() *Client {
 	return &Client{
 		httpClient: &http.Client{
@@ -83,7 +86,6 @@ func (c *Client) readUserResource(url string, token string) (*UserResourceRespon
 }
 
 func (c *Client) newRequest(method, url string, body interface{}, token *string) (*http.Request, error) {
-
 	var buf io.ReadWriter
 	if body != nil {
 		buf = new(bytes.Buffer)
@@ -126,7 +128,7 @@ func (c *Client) performRequestAndGetAuthHeader(url string) (*string, error) {
 		}
 	}
 
-	return nil, errors.New("Response doesn't have WWW-AUTHENTICATE header!")
+	return nil, errors.New("response doesn't have WWW-AUTHENTICATE header")
 }
 
 func (c *Client) do(req *http.Request, v interface{}) (*http.Response, error) {
@@ -156,7 +158,7 @@ func (c *Client) validateResponse(resp *http.Response) error {
 		}
 
 		bodyBytes, _ := ioutil.ReadAll(resp.Body)
-		if bodyBytes != nil && len(bodyBytes) > 0 {
+		if len(bodyBytes) > 0 {
 			msg += "Response body: " + string(bodyBytes) + ". "
 		} else {
 			msg += "Doesn't have body. "
