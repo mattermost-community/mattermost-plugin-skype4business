@@ -137,7 +137,7 @@ func TestPlugin(t *testing.T) {
 			p := Plugin{}
 			p.setConfiguration(&configuration{
 				ClientId:    "123123123",
-				ProductType: PRODUCT_TYPE_ONLINE,
+				ProductType: productTypeOnline,
 			})
 			p.SetAPI(api)
 			err := p.OnActivate()
@@ -182,7 +182,7 @@ func makeMocks(mmChannelId string, mmUser model.User, splitDomain bool) Mocks {
 		Domain:      firstDomain,
 		Username:    "simpleusername",
 		Password:    "veryhardpassword",
-		ProductType: PRODUCT_TYPE_SERVER,
+		ProductType: productTypeServer,
 	}
 
 	tokenToReturnForFirstDomain := "tokenNo1"

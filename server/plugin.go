@@ -267,7 +267,7 @@ func (p *Plugin) handleRegisterMeetingFromOnlineVersion(w http.ResponseWriter, r
 		fmt.Println("Cannot fetch configuration")
 		http.Error(w, "Forbidden", http.StatusForbidden)
 		return
-	} else if config.ProductType == PRODUCT_TYPE_SERVER {
+	} else if config.ProductType == productTypeServer {
 		fmt.Println("Server version is set")
 		http.Error(w, "Forbidden", http.StatusForbidden)
 		return
@@ -324,7 +324,7 @@ func (p *Plugin) handleRegisterMeetingFromOnlineVersion(w http.ResponseWriter, r
 
 func (p *Plugin) handleCreateMeetingInServerVersion(w http.ResponseWriter, r *http.Request) {
 	config := p.getConfiguration()
-	if config.ProductType == PRODUCT_TYPE_ONLINE {
+	if config.ProductType == productTypeOnline {
 		mlog.Error("Cannot create meeting in the server version when the online is set")
 		http.Error(w, "Forbidden", http.StatusForbidden)
 		return

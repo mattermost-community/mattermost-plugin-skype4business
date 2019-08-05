@@ -2,7 +2,6 @@ package main
 
 import (
 	"bytes"
-	"github.com/stretchr/testify/assert"
 	"io/ioutil"
 	"math"
 	"net/http"
@@ -10,6 +9,8 @@ import (
 	"net/url"
 	"strconv"
 	"testing"
+
+	"github.com/stretchr/testify/assert"
 )
 
 const (
@@ -133,7 +134,7 @@ func TestClient(t *testing.T) {
 		r, err = client.performRequestAndGetAuthHeader(server.URL + URLResponseWithoutAuthHeader)
 
 		assert.NotNil(t, err)
-		assert.Equal(t, "Response doesn't have WWW-AUTHENTICATE header!", err.Error())
+		assert.Equal(t, "response doesn't have WWW-AUTHENTICATE header", err.Error())
 		assert.Nil(t, r)
 	})
 

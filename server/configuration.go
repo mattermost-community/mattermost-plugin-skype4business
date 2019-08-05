@@ -4,15 +4,14 @@
 package main
 
 import (
-	"fmt"
 	"reflect"
 
 	"github.com/pkg/errors"
 )
 
 const (
-	PRODUCT_TYPE_SERVER = "server"
-	PRODUCT_TYPE_ONLINE = "online"
+	productTypeServer = "server"
+	productTypeOnline = "online"
 )
 
 type configuration struct {
@@ -29,25 +28,24 @@ func (c *configuration) Clone() *configuration {
 }
 
 func (c *configuration) IsValid() error {
-
-	if c.ProductType != PRODUCT_TYPE_ONLINE && c.ProductType != PRODUCT_TYPE_SERVER {
-		return fmt.Errorf("Product Type is not configured")
+	if c.ProductType != productTypeOnline && c.ProductType != productTypeServer {
+		return errors.New("Product Type is not configured")
 	}
 
-	if c.ProductType == PRODUCT_TYPE_SERVER {
+	if c.ProductType == productTypeServer {
 		if c.Username == "" {
-			return fmt.Errorf("Username is not configured.")
+			return errors.New("Username is not configured")
 		}
 
 		if c.Password == "" {
-			return fmt.Errorf("Password is not configured.")
+			return errors.New("Password is not configured")
 		}
 
 		if c.Domain == "" {
-			return fmt.Errorf("Domain is not configured.")
+			return errors.New("Domain is not configured")
 		}
 	} else if c.ClientId == "" {
-		return fmt.Errorf("ClientId is not configured")
+		return errors.New("ClientId is not configured")
 	}
 
 	return nil
@@ -82,6 +80,7 @@ func (p *Plugin) setConfiguration(configuration *configuration) {
 	p.configuration = configuration
 }
 
+// OnConfigurationChange reloads the plugin configuration.
 func (p *Plugin) OnConfigurationChange() error {
 	var configuration = new(configuration)
 
