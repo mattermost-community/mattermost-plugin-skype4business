@@ -128,7 +128,7 @@ func TestPlugin(t *testing.T) {
 
 			api.On("GetChannelMember", "thechannelid", "theuserid").Return(&model.ChannelMember{}, (*model.AppError)(nil))
 			api.On("CreatePost", mock.AnythingOfType("*model.Post")).Return(&model.Post{}, (*model.AppError)(nil))
-			api.On("KVSet", fmt.Sprintf("%v%v", POST_MEETING_KEY, "L30IC51J"), mock.AnythingOfType("[]uint8")).Return((*model.AppError)(nil))
+			api.On("KVSet", fmt.Sprintf("%v%v", PostMeetingKey, "L30IC51J"), mock.AnythingOfType("[]uint8")).Return((*model.AppError)(nil))
 			api.On("KVSet", "123", []byte("theuserid")).Return((*model.AppError)(nil))
 			api.On("KVGet", "123").Return([]byte("theuserid"), (*model.AppError)(nil))
 			api.On("KVDelete", "123").Return((*model.AppError)(nil))
@@ -234,7 +234,7 @@ func makeMocks(mmChannelId string, mmUser model.User, splitDomain bool) Mocks {
 	api.On("GetUser", mmUser.Id).Return(&mmUser, (*model.AppError)(nil)).Times(1)
 	api.On("GetChannelMember", mmChannelId, mmUser.Id).
 		Return(&model.ChannelMember{}, (*model.AppError)(nil)).Times(1)
-	api.On("KVGet", ROOT_URL_KEY).
+	api.On("KVGet", RootURLKey).
 		Return([]byte(discoveryUrlToReturn), (*model.AppError)(nil)).Times(1)
 	api.On("CreatePost", expectedPost).
 		Return(&model.Post{}, (*model.AppError)(nil)).Times(1)
@@ -371,8 +371,8 @@ func makeApplicationsUrl(domain string) string {
 
 func makeNewApplicationRequest() NewApplicationRequest {
 	return NewApplicationRequest{
-		UserAgent:  NEW_APPLICATION_USER_AGENT,
-		Culture:    NEW_APPLICATION_CULTURE,
+		UserAgent:  NewApplicationUserAgent,
+		Culture:    NewApplicationCulture,
 		EndpointId: "123",
 	}
 }
