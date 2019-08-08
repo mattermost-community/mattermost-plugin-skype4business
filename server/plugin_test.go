@@ -191,9 +191,9 @@ func makeMocks(mmChannelID string, mmUser model.User, splitDomain bool) Mocks {
 	expectedURLValuesForFirstDomain := makeURLValues(pluginConfigToReturn, firstDomain)
 
 	var (
-		tokenToReturnForSecondDomain                 = ""
-		expectedTokenURLForSecondDomain              = ""
-		authHeaderToReturnForSecondDomain            = ""
+		tokenToReturnForSecondDomain      = ""
+		expectedTokenURLForSecondDomain   = ""
+		authHeaderToReturnForSecondDomain = ""
 		expectedURLValuesForSecondDomain  url.Values
 	)
 	if splitDomain {
