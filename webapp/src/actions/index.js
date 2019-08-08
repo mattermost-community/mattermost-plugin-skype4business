@@ -24,7 +24,7 @@ export function startMeeting(channelId) {
         }
 
         dispatch({
-            type: PostTypes.REMOVE_POST,
+            type: PostTypes.POST_REMOVED,
             data: creatingInProgressPost,
         });
 
@@ -53,13 +53,8 @@ function createTemporaryPost(channelId, userId, message, dispatch) {
     };
 
     dispatch({
-        type: PostTypes.RECEIVED_POSTS,
-        data: {
-            order: [],
-            posts: {
-                [post.id]: post,
-            },
-        },
+        type: PostTypes.RECEIVED_NEW_POST,
+        data: post,
         channelId,
     });
 
