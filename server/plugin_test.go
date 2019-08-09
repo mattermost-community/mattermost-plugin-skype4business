@@ -51,7 +51,6 @@ func TestPlugin(t *testing.T) {
 
 	for name, tc := range map[string]struct {
 		Request            *http.Request
-		CreatePostError    *model.AppError
 		ExpectedStatusCode int
 	}{
 		"UnauthorizedMeetingRequest": {
