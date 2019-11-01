@@ -1,6 +1,6 @@
 module github.com/mattermost/mattermost-plugin-skype4business
 
-go 1.12
+go 1.13
 
 require (
 	github.com/go-ldap/ldap v3.0.3+incompatible // indirect
@@ -24,5 +24,4 @@ require (
 	google.golang.org/grpc v1.22.0 // indirect
 )
 
-// Workaround for https://github.com/golang/go/issues/30831 and fallout.
-replace github.com/golang/lint => github.com/golang/lint v0.0.0-20190227174305-8f45f776aaf1
+replace willnorris.com/go/imageproxy => willnorris.com/go/imageproxy v0.8.1-0.20190422234945-d4246a08fdec
