@@ -135,7 +135,7 @@ func TestPlugin(t *testing.T) {
 
 			p := Plugin{}
 			p.setConfiguration(&configuration{
-				ClientId:    "123123123",
+				ClientID:    "123123123",
 				ProductType: productTypeOnline,
 			})
 			p.SetAPI(api)
@@ -246,12 +246,12 @@ func makeMocks(mmChannelID string, mmUser model.User, splitDomain bool) Mocks {
 	clientMock.On("performRequestAndGetAuthHeader", expectedUserResourceURL).
 		Return(&authHeaderToReturnForFirstDomain, nil).Times(1)
 	clientMock.On("authenticate", expectedTokenURLForFirstDomain, expectedURLValuesForFirstDomain).
-		Return(&AuthResponse{Access_token: tokenToReturnForFirstDomain}, nil).Times(1)
+		Return(&AuthResponse{AccessToken: tokenToReturnForFirstDomain}, nil).Times(1)
 
 	tokenToBeUsed := tokenToReturnForFirstDomain
 	if splitDomain {
 		clientMock.On("authenticate", expectedTokenURLForSecondDomain, expectedURLValuesForSecondDomain).
-			Return(&AuthResponse{Access_token: tokenToReturnForSecondDomain}, nil).Times(1)
+			Return(&AuthResponse{AccessToken: tokenToReturnForSecondDomain}, nil).Times(1)
 		clientMock.On("performRequestAndGetAuthHeader", expectedApplicationsURL).
 			Return(&authHeaderToReturnForSecondDomain, nil).Times(1)
 		tokenToBeUsed = tokenToReturnForSecondDomain
@@ -372,7 +372,7 @@ func makeNewApplicationRequest() NewApplicationRequest {
 	return NewApplicationRequest{
 		UserAgent:  NewApplicationUserAgent,
 		Culture:    NewApplicationCulture,
-		EndpointId: "123",
+		EndpointID: "123",
 	}
 }
 
@@ -398,8 +398,8 @@ func makeNewMeetingRequest(mmUser model.User) NewMeetingRequest {
 
 func makeNewMeetingResponse(meetingID string, domain string) NewMeetingResponse {
 	return NewMeetingResponse{
-		MeetingId: meetingID,
-		JoinUrl:   domain + "/meetings/" + meetingID,
+		MeetingID: meetingID,
+		JoinURL:   domain + "/meetings/" + meetingID,
 	}
 }
 
@@ -408,12 +408,12 @@ func makePost(mmUser model.User, channelID string, createdMeeting NewMeetingResp
 		Id:        "",
 		UserId:    mmUser.Id,
 		ChannelId: channelID,
-		Message:   "Meeting started at " + createdMeeting.JoinUrl + ".",
+		Message:   "Meeting started at " + createdMeeting.JoinURL + ".",
 		Type:      "custom_s4b",
 		Props: model.StringInterface{
 			"from_webhook":      "true",
-			"meeting_id":        createdMeeting.MeetingId,
-			"meeting_link":      createdMeeting.JoinUrl,
+			"meeting_id":        createdMeeting.MeetingID,
+			"meeting_link":      createdMeeting.JoinURL,
 			"meeting_personal":  true,
 			"meeting_status":    "STARTED",
 			"meeting_topic":     "Meeting created by " + mmUser.Username,
