@@ -208,8 +208,8 @@ func (p *Plugin) handleClientID(w http.ResponseWriter, r *http.Request) {
 
 	w.Header().Set("Content-Type", "application/json")
 	config := p.getConfiguration()
-	var response ClientIdResponse
-	response.ClientId = config.ClientId
+	var response ClientIDResponse
+	response.ClientID = config.ClientID
 
 	if err := json.NewEncoder(w).Encode(&response); err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
@@ -287,7 +287,7 @@ func (p *Plugin) handleRegisterMeetingFromOnlineVersion(w http.ResponseWriter, r
 		return
 	}
 
-	if _, appErr = p.API.GetChannelMember(req.ChannelId, user.Id); appErr != nil {
+	if _, appErr = p.API.GetChannelMember(req.ChannelID, user.Id); appErr != nil {
 		fmt.Println(appErr.Error())
 		http.Error(w, "Forbidden", http.StatusForbidden)
 		return
@@ -297,11 +297,11 @@ func (p *Plugin) handleRegisterMeetingFromOnlineVersion(w http.ResponseWriter, r
 
 	post := &model.Post{
 		UserId:    user.Id,
-		ChannelId: req.ChannelId,
+		ChannelId: req.ChannelID,
 		Message:   fmt.Sprintf("Meeting started at %s.", req.MeetingURL),
 		Type:      PostMeetingType,
 		Props: map[string]interface{}{
-			"meeting_id":        req.MeetingId,
+			"meeting_id":        req.MeetingID,
 			"meeting_link":      req.MeetingURL,
 			"meeting_personal":  req.Personal,
 			"meeting_topic":     req.Topic,
@@ -319,13 +319,13 @@ func (p *Plugin) handleRegisterMeetingFromOnlineVersion(w http.ResponseWriter, r
 		return
 	}
 
-	if appErr = p.API.KVSet(fmt.Sprintf("%v%v", PostMeetingKey, req.MeetingId), []byte(post.Id)); appErr != nil {
+	if appErr = p.API.KVSet(fmt.Sprintf("%v%v", PostMeetingKey, req.MeetingID), []byte(post.Id)); appErr != nil {
 		fmt.Println(appErr.Error())
 		http.Error(w, appErr.Error(), appErr.StatusCode)
 		return
 	}
 
-	w.Write([]byte(fmt.Sprintf("%v", req.MeetingId)))
+	w.Write([]byte(fmt.Sprintf("%v", req.MeetingID)))
 }
 
 func (p *Plugin) handleCreateMeetingInServerVersion(w http.ResponseWriter, r *http.Request) {
@@ -365,7 +365,7 @@ func (p *Plugin) handleCreateMeetingInServerVersion(w http.ResponseWriter, r *ht
 		return
 	}
 
-	if _, err := p.API.GetChannelMember(req.ChannelId, user.Id); err != nil {
+	if _, err := p.API.GetChannelMember(req.ChannelID, user.Id); err != nil {
 		mlog.Error("Error getting channel member: " + err.Error())
 		http.Error(w, "Forbidden", http.StatusForbidden)
 		return
@@ -379,7 +379,7 @@ func (p *Plugin) handleCreateMeetingInServerVersion(w http.ResponseWriter, r *ht
 	}
 
 	newMeetingResponse, err := p.client.createNewMeeting(
-		applicationState.OnlineMeetingsUrl,
+		applicationState.OnlineMeetingsURL,
 		NewMeetingRequest{
 			Subject:                   "Meeting created by " + user.Username,
 			AutomaticLeaderAssignment: "SameEnterprise",
@@ -396,12 +396,12 @@ func (p *Plugin) handleCreateMeetingInServerVersion(w http.ResponseWriter, r *ht
 
 	post := &model.Post{
 		UserId:    user.Id,
-		ChannelId: req.ChannelId,
-		Message:   fmt.Sprintf("Meeting started at %s.", newMeetingResponse.JoinUrl),
+		ChannelId: req.ChannelID,
+		Message:   fmt.Sprintf("Meeting started at %s.", newMeetingResponse.JoinURL),
 		Type:      PostMeetingType,
 		Props: map[string]interface{}{
-			"meeting_id":        newMeetingResponse.MeetingId,
-			"meeting_link":      newMeetingResponse.JoinUrl,
+			"meeting_id":        newMeetingResponse.MeetingID,
+			"meeting_link":      newMeetingResponse.JoinURL,
 			"meeting_personal":  req.Personal,
 			"override_username": PostMeetingOverrideUsername,
 			"meeting_topic":     "Meeting created by " + user.Username,
@@ -418,7 +418,7 @@ func (p *Plugin) handleCreateMeetingInServerVersion(w http.ResponseWriter, r *ht
 		return
 	}
 
-	appErr = p.API.KVSet(fmt.Sprintf("%v%v", PostMeetingKey, newMeetingResponse.MeetingId), []byte(post.Id))
+	appErr = p.API.KVSet(fmt.Sprintf("%v%v", PostMeetingKey, newMeetingResponse.MeetingID), []byte(post.Id))
 	if appErr != nil {
 		mlog.Error("Error writing meeting id to the database: " + appErr.Error())
 		http.Error(w, appErr.Error(), http.StatusInternalServerError)
@@ -463,11 +463,11 @@ func (p *Plugin) fetchOnlineMeetingsURL() (*ApplicationState, *APIError) {
 	}
 
 	newApplicationResponse, err := p.client.createNewApplication(
-		applicationState.ApplicationsUrl,
+		applicationState.ApplicationsURL,
 		NewApplicationRequest{
 			UserAgent:  NewApplicationUserAgent,
 			Culture:    NewApplicationCulture,
-			EndpointId: "123",
+			EndpointID: "123",
 		},
 		applicationState.Token,
 	)
@@ -475,7 +475,7 @@ func (p *Plugin) fetchOnlineMeetingsURL() (*ApplicationState, *APIError) {
 		return nil, &APIError{Message: "Error creating a new application: " + err.Error()}
 	}
 
-	applicationState.OnlineMeetingsUrl = "https://" + applicationState.Resource + "/" + newApplicationResponse.Embedded.OnlineMeetings.OnlineMeetingsLinks.MyOnlineMeetings.Href
+	applicationState.OnlineMeetingsURL = "https://" + applicationState.Resource + "/" + newApplicationResponse.Embedded.OnlineMeetings.OnlineMeetingsLinks.MyOnlineMeetings.Href
 
 	return applicationState, nil
 }
@@ -505,7 +505,7 @@ func (p *Plugin) getApplicationState(discoveryURL string) (*ApplicationState, *A
 		return nil, &APIError{Message: "Error during authentication: " + err.Error()}
 	}
 
-	userResourceResponse, err := p.client.readUserResource(userResourceURL, authResponse.Access_token)
+	userResourceResponse, err := p.client.readUserResource(userResourceURL, authResponse.AccessToken)
 	if err != nil {
 		return nil, &APIError{Message: "Error reading user resource: " + err.Error()}
 	}
@@ -536,9 +536,9 @@ func (p *Plugin) getApplicationState(discoveryURL string) (*ApplicationState, *A
 		}
 
 		return &ApplicationState{
-			ApplicationsUrl: applicationsURL,
+			ApplicationsURL: applicationsURL,
 			Resource:        applicationsResourceName,
-			Token:           authResponse.Access_token,
+			Token:           authResponse.AccessToken,
 		}, nil
 	}
 

@@ -1,20 +1,20 @@
 package main
 
 type StartMeetingRequest struct {
-	ChannelId  string `json:"channel_id"`
+	ChannelID  string `json:"channel_id"`
 	Personal   bool   `json:"personal"`
 	Topic      string `json:"topic"`
-	MeetingId  string `json:"meeting_id"`
+	MeetingID  string `json:"meeting_id"`
 	MeetingURL string `json:"metting_url"`
 }
 
 type StartServerMeetingRequest struct {
-	ChannelId string `json:"channel_id"`
+	ChannelID string `json:"channel_id"`
 	Personal  bool   `json:"personal"`
 }
 
-type ClientIdResponse struct {
-	ClientId string `json:"client_id"`
+type ClientIDResponse struct {
+	ClientID string `json:"client_id"`
 }
 
 type ProductTypeResponse struct {
@@ -22,7 +22,7 @@ type ProductTypeResponse struct {
 }
 
 type State struct {
-	userId string
+	userID string
 	State  string
 }
 
@@ -32,8 +32,8 @@ type NewMeetingRequest struct {
 }
 
 type NewMeetingResponse struct {
-	JoinUrl   string `json:"joinUrl"`
-	MeetingId string `json:"onlineMeetingId"`
+	JoinURL   string `json:"joinUrl"`
+	MeetingID string `json:"onlineMeetingId"`
 }
 
 type DiscoveryResponse struct {
@@ -42,7 +42,7 @@ type DiscoveryResponse struct {
 
 type NewApplicationRequest struct {
 	UserAgent  string `json:"UserAgent"`
-	EndpointId string `json:"EndpointId"`
+	EndpointID string `json:"EndpointId"`
 	Culture    string `json:"Culture"`
 }
 
@@ -63,7 +63,7 @@ type OnlineMeetingsLinks struct {
 }
 
 type AuthResponse struct {
-	Access_token string
+	AccessToken string `json:"access_token"`
 }
 
 type UserResourceResponse struct {
@@ -85,8 +85,8 @@ type APIError struct {
 }
 
 type ApplicationState struct {
-	OnlineMeetingsUrl string
-	ApplicationsUrl   string
+	OnlineMeetingsURL string
+	ApplicationsURL   string
 	Resource          string
 	Token             string
 }

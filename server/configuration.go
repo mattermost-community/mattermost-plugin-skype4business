@@ -16,7 +16,7 @@ const (
 
 type configuration struct {
 	ProductType string
-	ClientId    string
+	ClientID    string
 	Username    string
 	Password    string
 	Domain      string
@@ -44,8 +44,8 @@ func (c *configuration) IsValid() error {
 		if c.Domain == "" {
 			return errors.New("Domain is not configured")
 		}
-	} else if c.ClientId == "" {
-		return errors.New("ClientId is not configured")
+	} else if c.ClientID == "" {
+		return errors.New("ClientID is not configured")
 	}
 
 	return nil

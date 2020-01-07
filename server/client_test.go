@@ -49,7 +49,7 @@ func TestClient(t *testing.T) {
 
 		assert.Nil(t, err)
 		assert.NotNil(t, r)
-		assert.Equal(t, TestToken, r.Access_token)
+		assert.Equal(t, TestToken, r.AccessToken)
 
 		r, err = client.authenticate(URLInvalid, url.Values{})
 
@@ -92,8 +92,8 @@ func TestClient(t *testing.T) {
 
 		assert.Nil(t, err)
 		assert.NotNil(t, r)
-		assert.Equal(t, TestOnlineMeetingID, r.MeetingId)
-		assert.Equal(t, TestJoinURL, r.JoinUrl)
+		assert.Equal(t, TestOnlineMeetingID, r.MeetingID)
+		assert.Equal(t, TestJoinURL, r.JoinURL)
 
 		r, err = client.createNewMeeting(URLInvalid, math.Inf(1), TestToken)
 
