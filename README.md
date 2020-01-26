@@ -61,7 +61,7 @@ Originally developed by [kosgrz](https://github.com/kosgrz).
     2. Choose ``Server`` as the **Skype for Business Product Type**
     3. Enter the **Server Domain** of your Skype for Business server instance. For example, ``contoso.com.``
     4. Enter the **Bot Username** of your bot user created in the Skype for Business domain. For example, bot@contoso.com. We strongly recommend using a dedicated bot account for this plugin, rather than an existing user account.
-    5. Enter the **Bot Username** of your bot user created in the Skype for Business domain.
+    5. Enter the **Bot Password** of your bot user created in the Skype for Business domain.
     6. Click **Save**
 3. Enable the plugin
     1. Go to **System Console -> Plugins -> Management** and click **Enable** underneath the Skype for Business plugin
