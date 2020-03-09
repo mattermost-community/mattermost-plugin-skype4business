@@ -23,15 +23,26 @@ import (
 )
 
 const (
-	PostMeetingKey              = "post_meeting_"
-	PostMeetingType             = "custom_s4b"
+	// PostMeetingKey is a prefix added to each post's ID created by the plugin.
+	PostMeetingKey = "post_meeting_"
+	// PostMeetingType represents a type of posts created by the plugin.
+	PostMeetingType = "custom_s4b"
+	// PostMeetingOverrideUsername overrides the name displayed as the sender of a post with a meeting created by the plugin.
 	PostMeetingOverrideUsername = "Skype for Business Plugin"
-	NewApplicationUserAgent     = "mm_skype4b_plugin"
-	NewApplicationCulture       = "en-US"
-	WsEventAuthenticated        = "authenticated"
-	RootURLKey                  = "root_url"
+	// NewApplicationUserAgent is used by UCWA for identifying messages sent on behalf of the plugin.
+	NewApplicationUserAgent = "mm_skype4b_plugin"
+	// NewApplicationCulture represents the culture used by the plugin.
+	// Used only by S4B Server.
+	NewApplicationCulture = "en-US"
+	// WsEventAuthenticated represents type of PublishWebSocketEvent broadcasted after authentication in Azure AD.
+	// Used only by S4B Online.
+	WsEventAuthenticated = "authenticated"
+	// RootURLKey represents a key in KV Store where is saved a full URL used to perform autodiscovery is saved.
+	// Used only by S4B Server.
+	RootURLKey = "root_url"
 )
 
+// IClient is an interface of a struct that performs requests to UCWA.
 type IClient interface {
 	authenticate(url string, body url.Values) (*AuthResponse, error)
 	createNewApplication(url string, body interface{}, token string) (*NewApplicationResponse, error)
@@ -41,6 +52,7 @@ type IClient interface {
 	readUserResource(url string, token string) (*UserResourceResponse, error)
 }
 
+// Plugin represents the plugin api.
 type Plugin struct {
 	plugin.MattermostPlugin
 
@@ -54,6 +66,8 @@ type Plugin struct {
 	client IClient
 }
 
+// OnActivate is a method that is called once the plugin is activated.
+// It checks if a provided configuration of the plugin is valid.
 func (p *Plugin) OnActivate() error {
 	config := p.getConfiguration()
 	if err := config.IsValid(); err != nil {
