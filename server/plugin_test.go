@@ -132,6 +132,7 @@ func TestPlugin(t *testing.T) {
 			api.On("KVGet", "123").Return([]byte("theuserid"), (*model.AppError)(nil))
 			api.On("KVDelete", "123").Return((*model.AppError)(nil))
 			api.On("PublishWebSocketEvent", "authenticated", mock.Anything, mock.Anything).Return()
+			api.On("LogError", mock.AnythingOfTypeArgument("string"), mock.AnythingOfTypeArgument("string")).Return()
 
 			p := Plugin{}
 			p.setConfiguration(&configuration{
@@ -239,6 +240,7 @@ func makeMocks(mmChannelID string, mmUser model.User, splitDomain bool) Mocks {
 		Return(&model.Post{}, (*model.AppError)(nil)).Times(1)
 	api.On("KVSet", expectedPostMeetingID, mock.AnythingOfType("[]uint8")).
 		Return((*model.AppError)(nil)).Times(1)
+	api.On("LogWarn", mock.AnythingOfType("string")).Return()
 
 	clientMock := ClientMock{}
 	clientMock.On("performDiscovery", "https://lyncdiscover."+firstDomain).
