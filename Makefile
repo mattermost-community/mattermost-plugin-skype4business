@@ -32,8 +32,7 @@ apply:
 
 ## Runs govet and gofmt against all packages.
 .PHONY: check-style
-# Disable golint for now
-check-style: webapp/.npminstall gofmt govet # golint
+check-style: webapp/.npminstall gofmt govet golint
 	@echo Checking for style guide compliance
 
 ifneq ($(HAS_WEBAPP),)
