@@ -83,7 +83,7 @@ func TestPlugin(t *testing.T) {
 		},
 		"InvalidAuthorizeInADDRequest1": {
 			Request:            invalidAuthorizeInADDRequest1,
-			ExpectedStatusCode: http.StatusUnauthorized,
+			ExpectedStatusCode: http.StatusBadRequest,
 		},
 		"InvalidAuthorizeInADDRequest2": {
 			Request:            invalidAuthorizeInADDRequest2,
@@ -132,7 +132,7 @@ func TestPlugin(t *testing.T) {
 			api.On("KVGet", "123").Return([]byte("theuserid"), (*model.AppError)(nil))
 			api.On("KVDelete", "123").Return((*model.AppError)(nil))
 			api.On("PublishWebSocketEvent", "authenticated", mock.Anything, mock.Anything).Return()
-			api.On("LogError", mock.AnythingOfTypeArgument("string"), mock.AnythingOfTypeArgument("string")).Return()
+			api.On("LogWarn", mock.AnythingOfTypeArgument("string"), mock.AnythingOfTypeArgument("string")).Return()
 
 			p := Plugin{}
 			p.setConfiguration(&configuration{

@@ -5,6 +5,7 @@ package main
 
 import (
 	"encoding/json"
+	"errors"
 	"fmt"
 	"io"
 	"net/http"
@@ -91,7 +92,12 @@ func (p *Plugin) ServeHTTP(c *plugin.Context, w http.ResponseWriter, r *http.Req
 	case "/api/v1/client_id":
 		p.handleClientID(w, r)
 	case "/api/v1/auth":
-		p.handleAuthorizeInADD(w, r)
+		err := p.handleAuthorizeInADD(w, r)
+		if err != nil {
+			p.API.LogWarn(err.Error())
+			http.Error(w, err.Error(), http.StatusBadRequest)
+		}
+
 	case "/api/v1/auth_redirect":
 		p.completeAuthorizeInADD(w, r)
 	case "/api/v1/register_meeting_from_online_version":
@@ -103,47 +109,38 @@ func (p *Plugin) ServeHTTP(c *plugin.Context, w http.ResponseWriter, r *http.Req
 	}
 }
 
-func (p *Plugin) handleAuthorizeInADD(w http.ResponseWriter, r *http.Request) {
+func (p *Plugin) handleAuthorizeInADD(w http.ResponseWriter, r *http.Request) error {
 
 	userID := r.URL.Query().Get("mattermost_user_id")
 
 	if userID == "" {
-		p.API.LogError("Cannot authorize in ADD. Missing 'mattermost_user_id' param")
-		http.Error(w, "Cannot authorize in ADD. Missing 'mattermost_user_id' param.", http.StatusUnauthorized)
-		return
+		return errors.New("cannot authorize in ADD. Missing 'mattermost_user_id' param")
 	}
 
 	encodedAuthURL := r.URL.Query().Get("navigateTo")
 	if encodedAuthURL == "" {
-		p.API.LogError("Cannot authorize in ADD. Missing 'navigateTo' param")
-		http.Error(w, "Cannot authorize in ADD. Missing 'navigateTo' param.", http.StatusBadRequest)
-		return
+		return errors.New("cannot authorize in ADD. Missing 'navigateTo' param")
 	}
 
 	authURL, err := url.QueryUnescape(encodedAuthURL)
 	if err != nil {
-		p.API.LogError("Cannot authorize in ADD. An error occured while decoding URL", "err", err)
-		http.Error(w, "Cannot authorize in ADD. An error occured while decoding URL.", http.StatusBadRequest)
-		return
+		return fmt.Errorf("cannot authorize in ADD. An error occured while decoding URL: %w", err)
 	}
 
 	authURLValues, err := url.ParseQuery(authURL)
 	if err != nil {
-		p.API.LogError("Cannot authorize in ADD. An error occured while parsing URL", "err", err)
-		http.Error(w, "Cannot authorize in ADD. An error occured while parsing URL.", http.StatusBadRequest)
-		return
+		return fmt.Errorf("cannot authorize in ADD. An error occured while parsing URL: %w", err)
 	}
 
 	state := authURLValues.Get("state")
 	if state == "" {
-		p.API.LogError("Cannot authorize in ADD. Missing state' param")
-		http.Error(w, "Cannot authorize in ADD. Missing state' param.", http.StatusBadRequest)
-		return
+		return errors.New("cannot authorize in ADD. Missing state' param")
 	}
 
 	p.API.KVSet(state, []byte(strings.TrimSpace(userID)))
 
 	http.Redirect(w, r, authURL, http.StatusFound)
+	return nil
 }
 
 func (p *Plugin) completeAuthorizeInADD(w http.ResponseWriter, r *http.Request) {
@@ -151,7 +148,7 @@ func (p *Plugin) completeAuthorizeInADD(w http.ResponseWriter, r *http.Request) 
 	idToken := r.FormValue("id_token")
 
 	if idToken == "" {
-		p.API.LogError("Cannot complete authorization in ADD. Missing 'id_token' param")
+		p.API.LogWarn("Cannot complete authorization in ADD. Missing 'id_token' param")
 		http.Error(w, "Cannot complete authorization in ADD. Missing 'id_token' param.", http.StatusBadRequest)
 		return
 	}
@@ -159,7 +156,7 @@ func (p *Plugin) completeAuthorizeInADD(w http.ResponseWriter, r *http.Request) 
 	state := r.FormValue("state")
 
 	if state == "" {
-		p.API.LogError("Cannot complete authorization in ADD. Missing 'state' param")
+		p.API.LogWarn("Cannot complete authorization in ADD. Missing 'state' param")
 		http.Error(w, "Cannot complete authorization in ADD. Missing 'state' param.", http.StatusBadRequest)
 		return
 	}
@@ -167,7 +164,7 @@ func (p *Plugin) completeAuthorizeInADD(w http.ResponseWriter, r *http.Request) 
 	userID, err := p.API.KVGet(state)
 
 	if err != nil {
-		p.API.LogError("Cannot complete authorization in ADD. An error occured while fetching stored state",
+		p.API.LogWarn("Cannot complete authorization in ADD. An error occured while fetching stored state",
 			"err", err)
 		http.Error(w, "Cannot complete authorization in ADD. An error occured while fetching stored state.",
 			http.StatusBadRequest)
@@ -175,7 +172,7 @@ func (p *Plugin) completeAuthorizeInADD(w http.ResponseWriter, r *http.Request) 
 	}
 
 	if userID == nil {
-		p.API.LogError("Cannot complete authorization in ADD. There is no stored state")
+		p.API.LogWarn("Cannot complete authorization in ADD. There is no stored state")
 		http.Error(w, "Cannot complete authorization in ADD. There is no stored state.", http.StatusBadRequest)
 		return
 	}
@@ -220,7 +217,7 @@ func (p *Plugin) handleClientID(w http.ResponseWriter, r *http.Request) {
 	userID := r.Header.Get("Mattermost-User-Id")
 
 	if userID == "" {
-		p.API.LogError("Cannot fetch Client ID. Missing 'Mattermost-User-Id' header")
+		p.API.LogWarn("Cannot fetch Client ID. Missing 'Mattermost-User-Id' header")
 		http.Error(w, "Cannot fetch Client ID. Missing 'Mattermost-User-Id' header.", http.StatusUnauthorized)
 		return
 	}
@@ -241,14 +238,14 @@ func (p *Plugin) handleProductType(w http.ResponseWriter, r *http.Request) {
 
 	userID := r.Header.Get("Mattermost-User-Id")
 	if userID == "" {
-		p.API.LogError("Cannot fetch Product Type. Missing 'Mattermost-User-Id' header")
+		p.API.LogWarn("Cannot fetch Product Type. Missing 'Mattermost-User-Id' header")
 		http.Error(w, "Cannot fetch Product Type. Missing 'Mattermost-User-Id' header.", http.StatusUnauthorized)
 		return
 	}
 
 	config := p.getConfiguration()
 	if config == nil {
-		p.API.LogError("Cannot fetch Product Type. Fetched configuration is empty")
+		p.API.LogWarn("Cannot fetch Product Type. Fetched configuration is empty")
 		http.Error(w, "Cannot fetch Product Type. Fetched configuration is empty.", http.StatusUnauthorized)
 		return
 	}
@@ -258,7 +255,7 @@ func (p *Plugin) handleProductType(w http.ResponseWriter, r *http.Request) {
 	if err := json.NewEncoder(w).Encode(ProductTypeResponse{
 		ProductType: p.getConfiguration().ProductType,
 	}); err != nil {
-		p.API.LogError("Cannot fetch Product Type. An error occured while encoding the product type response",
+		p.API.LogWarn("Cannot fetch Product Type. An error occured while encoding the product type response",
 			"err", err)
 		http.Error(w, "Cannot fetch Product Type. An error occured while encoding the product type response.",
 			http.StatusInternalServerError)
@@ -271,34 +268,34 @@ func (p *Plugin) handleRegisterMeetingFromOnlineVersion(w http.ResponseWriter, r
 
 	userID := r.Header.Get("Mattermost-User-Id")
 	if userID == "" {
-		p.API.LogError("Cannot register meeting. Missing 'Mattermost-User-Id' header")
+		p.API.LogWarn("Cannot register meeting. Missing 'Mattermost-User-Id' header")
 		http.Error(w, "Cannot register meeting. Missing 'Mattermost-User-Id' header.", http.StatusUnauthorized)
 		return
 	}
 
 	user, appErr := p.API.GetUser(userID)
 	if appErr != nil {
-		p.API.LogError("Cannot register meeting. An error occured while fetching user",
+		p.API.LogWarn("Cannot register meeting. An error occured while fetching user",
 			"err", appErr)
 		http.Error(w, "Cannot register meeting. An error occured while fetching user.", appErr.StatusCode)
 		return
 	}
 
 	if user == nil {
-		p.API.LogError("Cannot register meeting. User with that ID doesn't exist", "userID", userID)
+		p.API.LogWarn("Cannot register meeting. User with that ID doesn't exist", "userID", userID)
 		http.Error(w, "Cannot register meeting. User with that ID doesn't exist.", http.StatusUnauthorized)
 		return
 	}
 
 	config := p.getConfiguration()
 	if config == nil {
-		p.API.LogError("Cannot register meeting. Fetched configuration is empty")
+		p.API.LogWarn("Cannot register meeting. Fetched configuration is empty")
 		http.Error(w, "Cannot register meeting. Fetched configuration is empty.", http.StatusForbidden)
 		return
 	}
 
 	if config.ProductType == productTypeServer {
-		p.API.LogError("Cannot register meeting. Product Type is not set as 'online'")
+		p.API.LogWarn("Cannot register meeting. Product Type is not set as 'online'")
 		http.Error(w, "Cannot register meeting. Product Type is not set as 'online'.", http.StatusForbidden)
 		return
 	}
@@ -306,14 +303,14 @@ func (p *Plugin) handleRegisterMeetingFromOnlineVersion(w http.ResponseWriter, r
 	var req StartMeetingRequest
 
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-		p.API.LogError("Cannot register meeting. An error occured while decoding JSON body:",
+		p.API.LogWarn("Cannot register meeting. An error occured while decoding JSON body:",
 			"err", err)
 		http.Error(w, "Cannot register meeting. An error occured while decoding JSON body.", http.StatusBadRequest)
 		return
 	}
 
 	if _, appErr = p.API.GetChannelMember(req.ChannelID, user.Id); appErr != nil {
-		p.API.LogError("Cannot register meeting. An error occured while fetching channel membership",
+		p.API.LogWarn("Cannot register meeting. An error occured while fetching channel membership",
 			"err", appErr.Error())
 		http.Error(w, "Cannot register meeting. An error occured while fetching channel membership.",
 			http.StatusForbidden)
@@ -341,7 +338,7 @@ func (p *Plugin) handleRegisterMeetingFromOnlineVersion(w http.ResponseWriter, r
 
 	post, appErr = p.API.CreatePost(post)
 	if appErr != nil {
-		p.API.LogError("Cannot register meeting. An error occured while creating a post with the meeting",
+		p.API.LogWarn("Cannot register meeting. An error occured while creating a post with the meeting",
 			"err", appErr)
 		http.Error(w, "Cannot register meeting. An error occured while creating a post with the meeting.",
 			appErr.StatusCode)
@@ -349,7 +346,7 @@ func (p *Plugin) handleRegisterMeetingFromOnlineVersion(w http.ResponseWriter, r
 	}
 
 	if appErr = p.API.KVSet(fmt.Sprintf("%v%v", PostMeetingKey, req.MeetingID), []byte(post.Id)); appErr != nil {
-		p.API.LogError("Cannot register meeting. An error occured while saving the meeting ID in the database",
+		p.API.LogWarn("Cannot register meeting. An error occured while saving the meeting ID in the database",
 			"err", appErr)
 		http.Error(w, "Cannot register meeting. An error occured while saving the meeting ID in the database.",
 			appErr.StatusCode)
@@ -362,14 +359,14 @@ func (p *Plugin) handleRegisterMeetingFromOnlineVersion(w http.ResponseWriter, r
 func (p *Plugin) handleCreateMeetingInServerVersion(w http.ResponseWriter, r *http.Request) {
 	config := p.getConfiguration()
 	if config.ProductType == productTypeOnline {
-		p.API.LogError("Cannot create meeting. Product Type is not set as 'server'")
+		p.API.LogWarn("Cannot create meeting. Product Type is not set as 'server'")
 		http.Error(w, "Cannot create meeting. Product Type is not set as 'server'.", http.StatusForbidden)
 		return
 	}
 
 	userID := r.Header.Get("Mattermost-User-Id")
 	if userID == "" {
-		p.API.LogError("Cannot create meeting. Missing 'Mattermost-User-Id' header")
+		p.API.LogWarn("Cannot create meeting. Missing 'Mattermost-User-Id' header")
 		http.Error(w, "Cannot create meeting. Missing 'Mattermost-User-Id' header.", http.StatusUnauthorized)
 		return
 	}
@@ -378,27 +375,27 @@ func (p *Plugin) handleCreateMeetingInServerVersion(w http.ResponseWriter, r *ht
 	var appError *model.AppError
 	user, appError = p.API.GetUser(userID)
 	if appError != nil {
-		p.API.LogError("Cannot create meeting. An error occured while fetching user",
+		p.API.LogWarn("Cannot create meeting. An error occured while fetching user",
 			"err", appError)
 		http.Error(w, "Cannot create meeting. An error occured while fetching user.", appError.StatusCode)
 		return
 	}
 
 	if user == nil {
-		p.API.LogError("Cannot create meeting. User with that id doesn't exist", "userID", userID)
+		p.API.LogWarn("Cannot create meeting. User with that id doesn't exist", "userID", userID)
 		http.Error(w, "Cannot create meeting. User with that id doesn't exist.", http.StatusUnauthorized)
 		return
 	}
 
 	var req StartServerMeetingRequest
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-		p.API.LogError("Cannot create meeting. An error occured while decoding JSON body", "err", err)
+		p.API.LogWarn("Cannot create meeting. An error occured while decoding JSON body", "err", err)
 		http.Error(w, "Cannot create meeting. An error occured while decoding JSON body.", http.StatusBadRequest)
 		return
 	}
 
 	if _, err := p.API.GetChannelMember(req.ChannelID, user.Id); err != nil {
-		p.API.LogError("Cannot create meeting. An error occured while fetching channel membership",
+		p.API.LogWarn("Cannot create meeting. An error occured while fetching channel membership",
 			"err", err)
 		http.Error(w, "Cannot create meeting. An error occured while fetching channel membership.",
 			http.StatusForbidden)
@@ -451,7 +448,7 @@ func (p *Plugin) handleCreateMeetingInServerVersion(w http.ResponseWriter, r *ht
 
 	post, appErr := p.API.CreatePost(post)
 	if appErr != nil {
-		p.API.LogError("Cannot create meeting. An error occured while creating a post with a meeting",
+		p.API.LogWarn("Cannot create meeting. An error occured while creating a post with a meeting",
 			"err", appErr)
 		http.Error(w, "Cannot create meeting. An error occured while creating a post with a meeting.",
 			http.StatusInternalServerError)
@@ -460,7 +457,7 @@ func (p *Plugin) handleCreateMeetingInServerVersion(w http.ResponseWriter, r *ht
 
 	appErr = p.API.KVSet(fmt.Sprintf("%v%v", PostMeetingKey, newMeetingResponse.MeetingID), []byte(post.Id))
 	if appErr != nil {
-		p.API.LogError("Cannot create meeting. An error occured while saving the meeting ID in the database",
+		p.API.LogWarn("Cannot create meeting. An error occured while saving the meeting ID in the database",
 			"err", appErr)
 		http.Error(w, "Cannot create meeting. An error occured while saving the meeting ID in the database.",
 			http.StatusInternalServerError)
@@ -468,7 +465,7 @@ func (p *Plugin) handleCreateMeetingInServerVersion(w http.ResponseWriter, r *ht
 	}
 
 	if err := json.NewEncoder(w).Encode(&newMeetingResponse); err != nil {
-		p.API.LogError("Cannot create meeting. An error occured while encoding the new meeting response",
+		p.API.LogWarn("Cannot create meeting. An error occured while encoding the new meeting response",
 			"err", err)
 		http.Error(w, "Cannot create meeting. An error occured while encoding the new meeting response.",
 			http.StatusInternalServerError)
@@ -485,7 +482,7 @@ func (p *Plugin) handleProfileImage(w http.ResponseWriter, r *http.Request) {
 	}
 	img, err := os.Open(filepath.Join(bundlePath, "assets", "profile.png"))
 	if err != nil {
-		p.API.LogError("Cannot read Skype 4 Business plugin profile image", "err", err)
+		p.API.LogWarn("Cannot read Skype 4 Business plugin profile image", "err", err)
 		http.NotFound(w, r)
 		return
 	}
