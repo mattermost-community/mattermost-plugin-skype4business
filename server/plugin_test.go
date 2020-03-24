@@ -55,7 +55,7 @@ func TestPlugin(t *testing.T) {
 	}{
 		"UnauthorizedMeetingRequest": {
 			Request:            noAuthMeetingRequest,
-			ExpectedStatusCode: http.StatusBadRequest,
+			ExpectedStatusCode: http.StatusUnauthorized,
 		},
 		"ValidMeetingRequest": {
 			Request:            validMeetingRequest,
@@ -67,7 +67,7 @@ func TestPlugin(t *testing.T) {
 		},
 		"UnauthorizedClientIdRequest": {
 			Request:            noAuthClientIDRequest,
-			ExpectedStatusCode: http.StatusBadRequest,
+			ExpectedStatusCode: http.StatusUnauthorized,
 		},
 		"ValidProductTypeReqeust": {
 			Request:            validProductTypeReqeust,
@@ -75,7 +75,7 @@ func TestPlugin(t *testing.T) {
 		},
 		"UnauthorizedProductTypeRequest": {
 			Request:            noAuthProductTypeReqeust,
-			ExpectedStatusCode: http.StatusBadRequest,
+			ExpectedStatusCode: http.StatusUnauthorized,
 		},
 		"ValidAuthorizeInADDRequest": {
 			Request:            validAuthorizeInADDRequest,
@@ -83,7 +83,7 @@ func TestPlugin(t *testing.T) {
 		},
 		"InvalidAuthorizeInADDRequest1": {
 			Request:            invalidAuthorizeInADDRequest1,
-			ExpectedStatusCode: http.StatusBadRequest,
+			ExpectedStatusCode: http.StatusUnauthorized,
 		},
 		"InvalidAuthorizeInADDRequest2": {
 			Request:            invalidAuthorizeInADDRequest2,
