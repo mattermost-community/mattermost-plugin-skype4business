@@ -5,8 +5,8 @@ package main
 
 import (
 	"encoding/json"
-	"errors"
 	"fmt"
+	"github.com/pkg/errors"
 	"io"
 	"net/http"
 	"net/url"
@@ -244,8 +244,8 @@ func (p *Plugin) handleProductType(w http.ResponseWriter, r *http.Request) (erro
 	if err := json.NewEncoder(w).Encode(ProductTypeResponse{
 		ProductType: p.getConfiguration().ProductType,
 	}); err != nil {
-		return fmt.Errorf("cannot fetch Product Type. An error occured while encoding the product type response: %w",
-			err), http.StatusInternalServerError
+		return errors.Wrapf(err, "cannot fetch Product Type. An error occured while encoding the product type response"),
+			http.StatusInternalServerError
 	}
 
 	return nil, http.StatusOK
@@ -260,11 +260,11 @@ func (p *Plugin) handleRegisterMeetingFromOnlineVersion(w http.ResponseWriter, r
 
 	user, appErr := p.API.GetUser(userID)
 	if appErr != nil {
-		return errors.New(fmt.Sprintf("cannot register meeting. An error occured while fetching user: %+v", appErr)), appErr.StatusCode
+		return errors.Wrapf(appErr, "cannot register meeting. An error occured while fetching user"), appErr.StatusCode
 	}
 
 	if user == nil {
-		return errors.New(fmt.Sprintf("cannot register meeting. User with that ID doesn't exist: %s", userID)), http.StatusUnauthorized
+		return fmt.Errorf("cannot register meeting. User with that ID doesn't exist: %s", userID), http.StatusUnauthorized
 	}
 
 	config := p.getConfiguration()
@@ -279,12 +279,12 @@ func (p *Plugin) handleRegisterMeetingFromOnlineVersion(w http.ResponseWriter, r
 	var req StartMeetingRequest
 
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-		return fmt.Errorf("cannot register meeting. An error occured while decoding JSON body: %w", err), http.StatusBadRequest
+		return errors.Wrapf(err, "cannot register meeting. An error occured while decoding JSON body"), http.StatusBadRequest
 	}
 
 	if _, appErr = p.API.GetChannelMember(req.ChannelID, user.Id); appErr != nil {
-		return errors.New(fmt.Sprintf("cannot register meeting. An error occured while fetching channel membership: %+v",
-			appErr)), http.StatusForbidden
+		return errors.Wrapf(appErr, "cannot register meeting. An error occured while fetching channel membership"),
+			http.StatusForbidden
 	}
 
 	serverConfiguration := p.API.GetConfig()
@@ -308,13 +308,13 @@ func (p *Plugin) handleRegisterMeetingFromOnlineVersion(w http.ResponseWriter, r
 
 	post, appErr = p.API.CreatePost(post)
 	if appErr != nil {
-		return errors.New(fmt.Sprintf("cannot register meeting. An error occured while creating a post with the meeting: %+v",
-			appErr)), appErr.StatusCode
+		return errors.Wrapf(appErr, "cannot register meeting. An error occured while creating a post with the meeting"),
+			appErr.StatusCode
 	}
 
 	if appErr = p.API.KVSet(fmt.Sprintf("%v%v", PostMeetingKey, req.MeetingID), []byte(post.Id)); appErr != nil {
-		return errors.New(fmt.Sprintf("cannot register meeting. An error occured while saving the meeting ID in the database: %+v",
-			appErr)), appErr.StatusCode
+		return errors.Wrapf(appErr, "cannot register meeting. An error occured while saving the meeting ID in the database"),
+			appErr.StatusCode
 	}
 
 	w.Write([]byte(fmt.Sprintf("%v", req.MeetingID)))
@@ -337,25 +337,29 @@ func (p *Plugin) handleCreateMeetingInServerVersion(w http.ResponseWriter, r *ht
 	var appError *model.AppError
 	user, appError = p.API.GetUser(userID)
 	if appError != nil {
-		return errors.New(fmt.Sprintf("Cannot create meeting. An error occured while fetching user: %+v", appError)), appError.StatusCode
+		return errors.Wrapf(appError, "cannot create meeting. An error occured while fetching user"),
+			appError.StatusCode
 	}
 
 	if user == nil {
-		return errors.New(fmt.Sprintf("Cannot create meeting. User with that id doesn't exist: %s", userID)), http.StatusUnauthorized
+		return fmt.Errorf("cannot create meeting. User with that id doesn't exist: %s", userID),
+			http.StatusUnauthorized
 	}
 
 	var req StartServerMeetingRequest
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-		return errors.New(fmt.Sprintf("Cannot create meeting. An error occured while decoding JSON body: %+v", err)), http.StatusBadRequest
+		return errors.Wrapf(err, "cannot create meeting. An error occured while decoding JSON body"), http.StatusBadRequest
 	}
 
 	if _, err := p.API.GetChannelMember(req.ChannelID, user.Id); err != nil {
-		return errors.New(fmt.Sprintf("Cannot create meeting. An error occured while fetching channel membership: %+v", err)), http.StatusForbidden
+		return errors.Wrapf(err, "cannot create meeting. An error occured while fetching channel membership"),
+			http.StatusForbidden
 	}
 
 	applicationState, apiErr := p.fetchOnlineMeetingsURL()
 	if apiErr != nil {
-		return errors.New(fmt.Sprintf("Cannot create meeting. An error occured while fetching meetings resource URL: %+v", apiErr)), http.StatusInternalServerError
+		return fmt.Errorf("cannot create meeting. An error occured while fetching meetings resource URL: %+v", apiErr),
+			http.StatusInternalServerError
 	}
 
 	newMeetingResponse, err := p.client.createNewMeeting(
@@ -367,7 +371,8 @@ func (p *Plugin) handleCreateMeetingInServerVersion(w http.ResponseWriter, r *ht
 		applicationState.Token,
 	)
 	if err != nil {
-		return errors.New(fmt.Sprintf("Cannot create meeting. An error occured while creating a new meeting in UCWA: %+v", err)), http.StatusInternalServerError
+		return errors.Wrapf(err, "cannot create meeting. An error occured while creating a new meeting in UCWA"),
+			http.StatusInternalServerError
 	}
 
 	serverConfiguration := p.API.GetConfig()
@@ -391,16 +396,19 @@ func (p *Plugin) handleCreateMeetingInServerVersion(w http.ResponseWriter, r *ht
 
 	post, appErr := p.API.CreatePost(post)
 	if appErr != nil {
-		return errors.New(fmt.Sprintf("Cannot create meeting. An error occured while creating a post with a meeting: %+v", appError)), http.StatusInternalServerError
+		return errors.Wrapf(appError, "cannot create meeting. An error occured while creating a post with a meeting"),
+			http.StatusInternalServerError
 	}
 
 	appErr = p.API.KVSet(fmt.Sprintf("%v%v", PostMeetingKey, newMeetingResponse.MeetingID), []byte(post.Id))
 	if appErr != nil {
-		return errors.New(fmt.Sprintf("Cannot create meeting. An error occured while saving the meeting ID in the database: %+v", appError)), http.StatusInternalServerError
+		return errors.Wrapf(appError, "cannot create meeting. An error occured while saving the meeting ID in the database"),
+			http.StatusInternalServerError
 	}
 
 	if err := json.NewEncoder(w).Encode(&newMeetingResponse); err != nil {
-		return errors.New(fmt.Sprintf("Cannot create meeting. An error occured while encoding the new meeting response: %+v", err)), http.StatusInternalServerError
+		return errors.Wrapf(err, "cannot create meeting. An error occured while encoding the new meeting response"),
+			http.StatusInternalServerError
 	}
 
 	return nil, http.StatusOK
