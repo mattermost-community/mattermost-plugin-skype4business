@@ -100,7 +100,7 @@ func (p *Plugin) ServeHTTP(c *plugin.Context, w http.ResponseWriter, r *http.Req
 	case "/api/v1/register_meeting_from_online_version":
 		err, httpStatusCode = p.handleRegisterMeetingFromOnlineVersion(w, r)
 	case "/api/v1/assets/profile.png":
-		p.handleProfileImage(w, r)
+		err, httpStatusCode = p.handleProfileImage(w)
 	default:
 		http.NotFound(w, r)
 	}
@@ -126,12 +126,12 @@ func (p *Plugin) handleAuthorizeInADD(w http.ResponseWriter, r *http.Request) (e
 
 	authURL, err := url.QueryUnescape(encodedAuthURL)
 	if err != nil {
-		return fmt.Errorf("cannot authorize in ADD. An error occured while decoding URL: %w", err), http.StatusBadRequest
+		return errors.Wrapf(err, "cannot authorize in ADD. An error occured while decoding URL"), http.StatusBadRequest
 	}
 
 	authURLValues, err := url.ParseQuery(authURL)
 	if err != nil {
-		return fmt.Errorf("cannot authorize in ADD. An error occured while parsing URL: %w", err), http.StatusBadRequest
+		return errors.Wrapf(err, "cannot authorize in ADD. An error occured while parsing URL"), http.StatusBadRequest
 	}
 
 	state := authURLValues.Get("state")
@@ -162,8 +162,8 @@ func (p *Plugin) completeAuthorizeInADD(w http.ResponseWriter, r *http.Request) 
 	userID, err := p.API.KVGet(state)
 
 	if err != nil {
-		return fmt.Errorf("cannot complete authorization in ADD. An error occured while fetching stored state: %w",
-			err), http.StatusBadRequest
+		return errors.Wrapf(err, "cannot complete authorization in ADD. An error occured while fetching stored state"),
+			http.StatusBadRequest
 	}
 
 	if userID == nil {
@@ -342,7 +342,7 @@ func (p *Plugin) handleCreateMeetingInServerVersion(w http.ResponseWriter, r *ht
 	}
 
 	if user == nil {
-		return fmt.Errorf("cannot create meeting. User with that id doesn't exist: %s", userID),
+		return errors.Errorf("cannot create meeting. User with that id doesn't exist: %s", userID),
 			http.StatusUnauthorized
 	}
 
@@ -414,22 +414,23 @@ func (p *Plugin) handleCreateMeetingInServerVersion(w http.ResponseWriter, r *ht
 	return nil, http.StatusOK
 }
 
-func (p *Plugin) handleProfileImage(w http.ResponseWriter, r *http.Request) {
+func (p *Plugin) handleProfileImage(w http.ResponseWriter) (error, int) {
 	bundlePath, err := p.API.GetBundlePath()
 	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
-		return
+		return errors.Wrapf(err, "cannot fetch profile image. An error occured while fetching the bundle path"),
+			http.StatusInternalServerError
 	}
 	img, err := os.Open(filepath.Join(bundlePath, "assets", "profile.png"))
 	if err != nil {
-		p.API.LogWarn("Cannot read Skype 4 Business plugin profile image", "err", err)
-		http.NotFound(w, r)
-		return
+		return errors.Wrapf(err, "cannot fetch profile image. An error occured while reading the profile image file"),
+			http.StatusNotFound
 	}
 	defer img.Close()
 
 	w.Header().Set("Content-Type", "image/png")
 	io.Copy(w, img)
+
+	return nil, http.StatusOK
 }
 
 func (p *Plugin) fetchOnlineMeetingsURL() (*ApplicationState, *APIError) {
