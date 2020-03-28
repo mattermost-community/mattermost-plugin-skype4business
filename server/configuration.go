@@ -89,6 +89,10 @@ func (p *Plugin) OnConfigurationChange() error {
 		return errors.Wrap(err, "failed to load plugin configuration")
 	}
 
+	if err := p.API.KVDelete(RootURLKey); err != nil {
+		return errors.Wrap(err, "failed to delete saved root URL in KV Store")
+	}
+
 	p.setConfiguration(configuration)
 
 	return nil
