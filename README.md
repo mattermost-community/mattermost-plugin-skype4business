@@ -1,4 +1,4 @@
-# Mattermost Skype for Business Plugin
+# Mattermost Skype for Business Plugin (Beta)
 
 [![Build Status](https://img.shields.io/circleci/project/github/mattermost/mattermost-plugin-skype4business/master.svg)](https://circleci.com/gh/mattermost/mattermost-plugin-skype4business)
 [![Code Coverage](https://img.shields.io/codecov/c/github/mattermost/mattermost-plugin-skype4business/master.svg)](https://codecov.io/gh/mattermost/mattermost-plugin-skype4business)
