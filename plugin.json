@@ -2,7 +2,11 @@
   "id": "skype4business",
   "name": "Skype for Business",
   "description": "Skype for Business plugin for Mattermost 5.2+.",
+  "homepage_url": "https://github.com/mattermost/mattermost-plugin-skype4business",
+  "support_url": "https://github.com/mattermost/mattermost-plugin-skype4business/issues",
+  "icon_path": "assets/profile.svg",
   "version": "0.1.2",
+  "min_server_version": "5.10.0",
   "server": {
     "executables": {
       "linux-amd64": "server/dist/plugin-linux-amd64",
