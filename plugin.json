@@ -55,7 +55,7 @@
         "key": "ClientId",
         "display_name": "Application ID",
         "type": "text",
-        "help_text": "Application ID from the Azure Active Directory. Only required for Skype for Business Online.\n\nUse this URL to configure the plugin in Azure Active Directory: ```https://SITEURL/plugins/skype4business/api/v1/auth_redirect```"
+        "help_text": "Application ID from the Azure Active Directory. Only required for Skype for Business Online. Use this URL to configure the plugin in Azure Active Directory: ```https://SITEURL/plugins/skype4business/api/v1/auth_redirect```"
       }
     ],
     "footer": "To report an issue, make a suggestion or a contribution, [check the repository](https://github.com/kosgrz/mattermost-plugin-skype4business)."
