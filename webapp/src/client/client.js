@@ -1,4 +1,5 @@
-import request from 'superagent';
+import {Client4} from 'mattermost-redux/client';
+import {ClientError} from 'mattermost-redux/client/client4';
 import AuthenticationContext from 'adal-angular';
 
 import {isDesktopApp} from '../utils/user_utils';
@@ -41,7 +42,7 @@ AuthenticationContext.prototype._addAdalFrame = function _addAdalFrame(iframeId)
         } else if (document.body && document.body.insertAdjacentHTML) {
             document.body.insertAdjacentHTML(
                 'beforeEnd',
-                '<iframe name="' + iframeId + '" id="' + iframeId + '" style="display:none"></iframe>'
+                '<iframe name="' + iframeId + '" id="' + iframeId + '" style="display:none"></iframe>',
             );
         }
         if (window.frames && window.frames[iframeId]) {
@@ -157,26 +158,21 @@ export default class Client {
     };
 
     getClientId = async () => {
-        const response = await request.
-            get(this.clientIdUrl).
-            set('Accept', 'application/json');
+        const response = await this.doGet(this.clientIdUrl, {Accept: 'application/json'});
 
         return response.body.client_id;
     };
 
     doCreateMeetingInServerVersion = async (channelId, personal) => {
-        const headers = {};
-        headers['X-Requested-With'] = 'XMLHttpRequest';
-
-        const response = await request.
-            post(this.createMeetingInServerVersionUrl).
-            send({
-                channel_id: channelId,
-                personal,
-            }).
-            set(headers).
-            type('application/json').
-            accept('application/json');
+        const body = {
+            channel_id: channelId,
+            personal,
+        };
+        const headers = {
+            'Content-Type': 'application/json',
+            Accept: 'application/json',
+        };
+        const response = await this.doPost(this.createMeetingInServerVersionUrl, body, headers);
 
         return response.body;
     };
@@ -206,7 +202,7 @@ export default class Client {
 
         const {meetingId, meetingUrl} = await this.sendMeetingData(url, accessTokenToApplicationResource);
 
-        this.sendPost(this.registerMeetingFromOnlineVersionUrl, {
+        this.doPost(this.registerMeetingFromOnlineVersionUrl, {
             channel_id: channelId,
             personal,
             topic,
@@ -216,18 +212,13 @@ export default class Client {
     };
 
     getApplicationsHref = async (autodiscoverServiceUrl) => {
-        const autodiscoverResponse = await request.
-            get(autodiscoverServiceUrl).
-            set('Accept', 'application/json');
+        const autodiscoverResponse = await this.doGet(autodiscoverServiceUrl, {Accept: 'application/json'});
 
         // eslint-disable-next-line no-underscore-dangle
         const userResourceHref = autodiscoverResponse.body._links.user.href;
         const userResourceName = userResourceHref.substring(0, userResourceHref.indexOf('/Autodiscover'));
         const accessTokenToUserResource = await this.getAccessTokenForResource(userResourceName);
-        const userResourceResponse = await request.
-            get(userResourceHref).
-            set('Authorization', 'Bearer ' + accessTokenToUserResource).
-            set('Accept', 'application/json');
+        const userResourceResponse = await this.doGet(userResourceHref, {Authorization: 'Bearer ' + accessTokenToUserResource, Accept: 'application/json'});
 
         // eslint-disable-next-line no-underscore-dangle
         const links = userResourceResponse.body._links;
@@ -251,11 +242,7 @@ export default class Client {
             EndpointId: endpointId,
             Culture: 'en-US',
         };
-        const response = await request.
-            post(oauthApplicationHref).
-            set('Authorization', authorizationValue).
-            set('Accept', 'application/json').
-            send(data);
+        const response = await this.doPost(oauthApplicationHref, data, {Authorization: authorizationValue, Accept: 'application/json'});
 
         if (response.body.endpointId !== endpointId) {
             throw new Error('Endpoints don\'t match!');
@@ -271,11 +258,7 @@ export default class Client {
             automaticLeaderAssignment: 'SameEnterprise',
         };
 
-        const response = await request.
-            post(url).
-            set('Authorization', 'Bearer ' + appAccessToken).
-            set('Accept', 'application/json').
-            send(data);
+        const response = await this.doPost(url, data, {Authorization: 'Bearere ' + appAccessToken, Accept: 'application/json'});
 
         return {
             meetingId: response.body.onlineMeetingId,
@@ -283,17 +266,47 @@ export default class Client {
         };
     };
 
-    sendPost = async (url, body, headers = {}) => {
-        headers['X-Requested-With'] = 'XMLHttpRequest';
+    doGet = async (url, headers = {}) => {
+        const options = {
+            method: 'get',
+            headers,
+        };
 
-        const response = await request.
-            post(url).
-            send(body).
-            set(headers).
-            type('application/json').
-            accept('application/json');
+        const response = await fetch(url, Client4.getOptions(options));
 
-        return response.body;
+        if (response.ok) {
+            return response.json();
+        }
+
+        const text = await response.text();
+
+        throw new ClientError(Client4.url, {
+            message: text || '',
+            status_code: response.status,
+            url,
+        });
+    }
+
+    doPost = async (url, body, headers = {}) => {
+        const options = {
+            method: 'post',
+            body: JSON.stringify(body),
+            headers,
+        };
+
+        const response = await fetch(url, Client4.getOptions(options));
+
+        if (response.ok) {
+            return response.json();
+        }
+
+        const text = await response.text();
+
+        throw new ClientError(Client4.url, {
+            message: text || '',
+            status_code: response.status,
+            url,
+        });
     };
 
     generateUuid4 = () => {
@@ -349,9 +362,7 @@ export default class Client {
     };
 
     isServerVersion = async () => {
-        const response = await request.
-            get(this.productTypeUrl).
-            set('Accept', 'application/json');
+        const response = await this.doGet(this.productTypeUrl, {Accept: 'application/json'});
 
         return response.body.product_type === 'server';
     };

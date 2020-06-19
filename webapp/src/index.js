@@ -20,7 +20,7 @@ class Plugin {
             (channel) => {
                 startMeeting(channel.id)(store.dispatch, store.getState);
             },
-            'Start Skype for Business Meeting'
+            'Start Skype for Business Meeting',
         );
         registry.registerPostTypeComponent('custom_s4b', PostTypeS4b);
 
