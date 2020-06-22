@@ -42,7 +42,7 @@ AuthenticationContext.prototype._addAdalFrame = function _addAdalFrame(iframeId)
         } else if (document.body && document.body.insertAdjacentHTML) {
             document.body.insertAdjacentHTML(
                 'beforeEnd',
-                '<iframe name="' + iframeId + '" id="' + iframeId + '" style="display:none"></iframe>',
+                `<iframe name="${iframeId}" id="${iframeId}" style="display:none"></iframe>`,
             );
         }
         if (window.frames && window.frames[iframeId]) {
@@ -160,7 +160,7 @@ export default class Client {
     getClientId = async () => {
         const response = await this.doGet(this.clientIdUrl, {Accept: 'application/json'});
 
-        return response.body.client_id;
+        return response.client_id;
     };
 
     doCreateMeetingInServerVersion = async (channelId, personal) => {
@@ -174,7 +174,7 @@ export default class Client {
         };
         const response = await this.doPost(this.createMeetingInServerVersionUrl, body, headers);
 
-        return response.body;
+        return response;
     };
 
     doCreateMeetingInOnlineVersion = async (channelId, currentUserId, getAuthenticationResult, personal, topic) => {
@@ -212,16 +212,16 @@ export default class Client {
     };
 
     getApplicationsHref = async (autodiscoverServiceUrl) => {
-        const autodiscoverResponse = await this.doGet(autodiscoverServiceUrl, {Accept: 'application/json'});
+        const autodiscoverResponse = await this.doGet(autodiscoverServiceUrl, {Accept: 'application/json'}, 'omit');
 
         // eslint-disable-next-line no-underscore-dangle
-        const userResourceHref = autodiscoverResponse.body._links.user.href;
+        const userResourceHref = autodiscoverResponse._links.user.href;
         const userResourceName = userResourceHref.substring(0, userResourceHref.indexOf('/Autodiscover'));
         const accessTokenToUserResource = await this.getAccessTokenForResource(userResourceName);
-        const userResourceResponse = await this.doGet(userResourceHref, {Authorization: 'Bearer ' + accessTokenToUserResource, Accept: 'application/json'});
+        const userResourceResponse = await this.doGet(userResourceHref, {Authorization: 'Bearer ' + accessTokenToUserResource, Accept: 'application/json'}, 'omit');
 
         // eslint-disable-next-line no-underscore-dangle
-        const links = userResourceResponse.body._links;
+        const links = userResourceResponse._links;
 
         if (links.applications) {
             return links.applications.href;
@@ -242,14 +242,14 @@ export default class Client {
             EndpointId: endpointId,
             Culture: 'en-US',
         };
-        const response = await this.doPost(oauthApplicationHref, data, {Authorization: authorizationValue, Accept: 'application/json'});
+        const response = await this.doPost(oauthApplicationHref, data, {Authorization: authorizationValue, Accept: 'application/json'}, 'omit');
 
-        if (response.body.endpointId !== endpointId) {
+        if (response.endpointId !== endpointId) {
             throw new Error('Endpoints don\'t match!');
         }
 
         // eslint-disable-next-line no-underscore-dangle
-        return response.body._embedded.onlineMeetings._links.myOnlineMeetings.href;
+        return response._embedded.onlineMeetings._links.myOnlineMeetings.href;
     };
 
     sendMeetingData = async (url, appAccessToken) => {
@@ -258,21 +258,27 @@ export default class Client {
             automaticLeaderAssignment: 'SameEnterprise',
         };
 
-        const response = await this.doPost(url, data, {Authorization: 'Bearere ' + appAccessToken, Accept: 'application/json'});
+        const response = await this.doPost(url, data, {Authorization: 'Bearer ' + appAccessToken, Accept: 'application/json'});
 
         return {
-            meetingId: response.body.onlineMeetingId,
-            meetingUrl: response.body.joinUrl,
+            meetingId: response.onlineMeetingId,
+            meetingUrl: response.joinUrl,
         };
     };
 
-    doGet = async (url, headers = {}) => {
+    doGet = async (url, headers = {}, credentials) => {
         const options = {
             method: 'get',
             headers,
         };
 
-        const response = await fetch(url, Client4.getOptions(options));
+        const newOptions = Client4.getOptions(options)
+
+        if (credentials) {
+            newOptions.credentials = credentials
+        }
+
+        const response = await fetch(url, newOptions);
 
         if (response.ok) {
             return response.json();
@@ -364,6 +370,6 @@ export default class Client {
     isServerVersion = async () => {
         const response = await this.doGet(this.productTypeUrl, {Accept: 'application/json'});
 
-        return response.body.product_type === 'server';
+        return response.product_type === 'server';
     };
 }
