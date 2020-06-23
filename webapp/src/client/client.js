@@ -272,10 +272,10 @@ export default class Client {
             headers,
         };
 
-        const newOptions = Client4.getOptions(options)
+        const newOptions = Client4.getOptions(options);
 
         if (credentials) {
-            newOptions.credentials = credentials
+            newOptions.credentials = credentials;
         }
 
         const response = await fetch(url, newOptions);
