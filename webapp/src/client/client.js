@@ -169,7 +169,6 @@ export default class Client {
             personal,
         };
         const headers = {
-            'Content-Type': 'application/json',
             Accept: 'application/json',
         };
         const response = await this.doPost(this.createMeetingInServerVersionUrl, body, headers);
@@ -294,6 +293,7 @@ export default class Client {
     }
 
     doPost = async (url, body, headers = {}) => {
+        headers['Content-Type'] = 'application/json';
         const options = {
             method: 'post',
             body: JSON.stringify(body),
