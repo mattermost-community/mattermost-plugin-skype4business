@@ -158,7 +158,7 @@ export default class Client {
     };
 
     getClientId = async () => {
-        const response = await this.doGet(this.clientIdUrl, {Accept: 'application/json'});
+        const response = await this.doGet(this.clientIdUrl);
 
         return response.client_id;
     };
@@ -168,10 +168,7 @@ export default class Client {
             channel_id: channelId,
             personal,
         };
-        const headers = {
-            Accept: 'application/json',
-        };
-        const response = await this.doPost(this.createMeetingInServerVersionUrl, body, headers);
+        const response = await this.doPost(this.createMeetingInServerVersionUrl, body);
 
         return response;
     };
@@ -211,13 +208,13 @@ export default class Client {
     };
 
     getApplicationsHref = async (autodiscoverServiceUrl) => {
-        const autodiscoverResponse = await this.doGet(autodiscoverServiceUrl, {Accept: 'application/json'}, 'omit');
+        const autodiscoverResponse = await this.doGet(autodiscoverServiceUrl, {}, 'omit');
 
         // eslint-disable-next-line no-underscore-dangle
         const userResourceHref = autodiscoverResponse._links.user.href;
         const userResourceName = userResourceHref.substring(0, userResourceHref.indexOf('/Autodiscover'));
         const accessTokenToUserResource = await this.getAccessTokenForResource(userResourceName);
-        const userResourceResponse = await this.doGet(userResourceHref, {Authorization: 'Bearer ' + accessTokenToUserResource, Accept: 'application/json'}, 'omit');
+        const userResourceResponse = await this.doGet(userResourceHref, {Authorization: 'Bearer ' + accessTokenToUserResource}, 'omit');
 
         // eslint-disable-next-line no-underscore-dangle
         const links = userResourceResponse._links;
@@ -241,7 +238,7 @@ export default class Client {
             EndpointId: endpointId,
             Culture: 'en-US',
         };
-        const response = await this.doPost(oauthApplicationHref, data, {Authorization: authorizationValue, Accept: 'application/json'}, 'omit');
+        const response = await this.doPost(oauthApplicationHref, data, {Authorization: authorizationValue}, 'omit');
 
         if (response.endpointId !== endpointId) {
             throw new Error('Endpoints don\'t match!');
@@ -257,7 +254,7 @@ export default class Client {
             automaticLeaderAssignment: 'SameEnterprise',
         };
 
-        const response = await this.doPost(url, data, {Authorization: 'Bearer ' + appAccessToken, Accept: 'application/json'});
+        const response = await this.doPost(url, data, {Authorization: 'Bearer ' + appAccessToken});
 
         return {
             meetingId: response.onlineMeetingId,
@@ -266,6 +263,7 @@ export default class Client {
     };
 
     doGet = async (url, headers = {}, credentials) => {
+        headers.Accept = 'application/json';
         const options = {
             method: 'get',
             headers,
@@ -293,6 +291,7 @@ export default class Client {
     }
 
     doPost = async (url, body, headers = {}) => {
+        headers.Accept = 'application/json';
         headers['Content-Type'] = 'application/json';
         const options = {
             method: 'post',
@@ -368,7 +367,7 @@ export default class Client {
     };
 
     isServerVersion = async () => {
-        const response = await this.doGet(this.productTypeUrl, {Accept: 'application/json'});
+        const response = await this.doGet(this.productTypeUrl);
 
         return response.product_type === 'server';
     };
