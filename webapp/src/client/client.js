@@ -2,8 +2,10 @@ import {Client4} from 'mattermost-redux/client';
 import {ClientError} from 'mattermost-redux/client/client4';
 import AuthenticationContext from 'adal-angular';
 
+
 import {isDesktopApp} from '../utils/user_utils';
 import {Periods} from '../constants';
+import {id as pluginID} from `../manifest`
 
 // workaround for the "Token renewal operation failed due to timeout" issue
 // https://github.com/AzureAD/azure-activedirectory-library-for-js/issues/391#issuecomment-384784134
@@ -264,18 +266,20 @@ export default class Client {
 
     doGet = async (url, headers = {}, credentials) => {
         headers.Accept = 'application/json';
-        const options = {
+        let options = {
             method: 'get',
             headers,
         };
 
-        const newOptions = Client4.getOptions(options);
-
-        if (credentials) {
-            newOptions.credentials = credentials;
+        if (url.includes('plugins/' + pluginID)) {
+            options = Client4.getOptions(options);
         }
 
-        const response = await fetch(url, newOptions);
+        if (credentials) {
+            options.credentials = credentials;
+        }
+
+        const response = await fetch(url, options);
 
         if (response.ok) {
             return response.json();
@@ -293,13 +297,17 @@ export default class Client {
     doPost = async (url, body, headers = {}) => {
         headers.Accept = 'application/json';
         headers['Content-Type'] = 'application/json';
-        const options = {
+        let options = {
             method: 'post',
             body: JSON.stringify(body),
             headers,
         };
 
-        const response = await fetch(url, Client4.getOptions(options));
+        if (url.includes('plugins/' + pluginID)) {
+            options = Client4.getOptions(options);
+        }
+
+        const response = await fetch(url, options);
 
         if (response.ok) {
             return response.json();
