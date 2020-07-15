@@ -2,10 +2,9 @@ import {Client4} from 'mattermost-redux/client';
 import {ClientError} from 'mattermost-redux/client/client4';
 import AuthenticationContext from 'adal-angular';
 
-
 import {isDesktopApp} from '../utils/user_utils';
 import {Periods} from '../constants';
-import {id as pluginID} from `../manifest`
+import {id as pluginID} from '../manifest';
 
 // workaround for the "Token renewal operation failed due to timeout" issue
 // https://github.com/AzureAD/azure-activedirectory-library-for-js/issues/391#issuecomment-384784134
