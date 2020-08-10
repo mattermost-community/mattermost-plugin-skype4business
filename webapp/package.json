@@ -15,6 +15,7 @@
   },
   "dependencies": {
     "adal-angular": "1.0.17",
+    "core-js": "3.6.5",
     "prop-types": "15.7.2",
     "react": "16.8.6",
     "react-redux": "5.0.7",
