@@ -157,7 +157,7 @@ ifneq ($(HAS_SERVER),)
 	$(GO) test -v $(GO_TEST_FLAGS) ./server/...
 endif
 ifneq ($(HAS_WEBAPP),)
-	cd webapp && $(NPM) run fix #No tests yet && $(NPM) run test;
+	cd webapp && $(NPM) run fix && $(NPM) run test-ci;
 endif
 
 ## Creates a coverage report for the server code.

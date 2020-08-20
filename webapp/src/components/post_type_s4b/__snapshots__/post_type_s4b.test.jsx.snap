@@ -1,0 +1,173 @@
+// Jest Snapshot v1, https://goo.gl/fbAQLP
+
+exports[`components/post_type_s4b should match snapshot with a meeting topic 1`] = `
+<div>
+  test creator has started a meeting
+  <div
+    style={
+      Object {
+        "marginLeft": "-20px",
+        "position": "relative",
+      }
+    }
+  >
+    <div
+      style={
+        Object {
+          "borderColor": "#BDBDBF",
+          "borderRadius": "4px",
+          "borderStyle": "solid",
+          "borderWidth": "1px",
+          "margin": "5px 0 5px 20px",
+          "padding": "2px 5px",
+        }
+      }
+    >
+      <div
+        style={
+          Object {
+            "borderLeftColor": "#89AECB",
+            "borderLeftStyle": "solid",
+            "borderLeftWidth": "4px",
+            "padding": "10px",
+          }
+        }
+      >
+        <h1
+          style={
+            Object {
+              "fontSize": "16px",
+              "fontWeight": "600",
+              "height": "22px",
+              "lineHeight": "18px",
+              "margin": "5px 0 1px 0",
+              "padding": "0",
+            }
+          }
+        >
+          test topic
+        </h1>
+        <div>
+          <div
+            style={
+              Object {
+                "overflowX": "auto",
+                "overflowY": "hidden",
+                "paddingRight": "5px",
+                "width": "100%",
+              }
+            }
+          >
+            <a
+              className="btn btn-lg btn-primary"
+              href="https://test.com"
+              rel="noopener noreferrer"
+              style={
+                Object {
+                  "borderRadius": "4px",
+                  "color": undefined,
+                  "fontFamily": "Open Sans",
+                  "fontSize": "12px",
+                  "fontWeight": "bold",
+                  "letterSpacing": "1px",
+                  "lineHeight": "19px",
+                  "marginTop": "12px",
+                }
+              }
+              target="_blank"
+            >
+              JOIN MEETING
+            </a>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+`;
+
+exports[`components/post_type_s4b should match snapshot without a meeting topic 1`] = `
+<div>
+  test creator has started a meeting
+  <div
+    style={
+      Object {
+        "marginLeft": "-20px",
+        "position": "relative",
+      }
+    }
+  >
+    <div
+      style={
+        Object {
+          "borderColor": "#BDBDBF",
+          "borderRadius": "4px",
+          "borderStyle": "solid",
+          "borderWidth": "1px",
+          "margin": "5px 0 5px 20px",
+          "padding": "2px 5px",
+        }
+      }
+    >
+      <div
+        style={
+          Object {
+            "borderLeftColor": "#89AECB",
+            "borderLeftStyle": "solid",
+            "borderLeftWidth": "4px",
+            "padding": "10px",
+          }
+        }
+      >
+        <h1
+          style={
+            Object {
+              "fontSize": "16px",
+              "fontWeight": "600",
+              "height": "22px",
+              "lineHeight": "18px",
+              "margin": "5px 0 1px 0",
+              "padding": "0",
+            }
+          }
+        >
+          Skype for Business Meeting
+        </h1>
+        <div>
+          <div
+            style={
+              Object {
+                "overflowX": "auto",
+                "overflowY": "hidden",
+                "paddingRight": "5px",
+                "width": "100%",
+              }
+            }
+          >
+            <a
+              className="btn btn-lg btn-primary"
+              href="https://test.com"
+              rel="noopener noreferrer"
+              style={
+                Object {
+                  "borderRadius": "4px",
+                  "color": undefined,
+                  "fontFamily": "Open Sans",
+                  "fontSize": "12px",
+                  "fontWeight": "bold",
+                  "letterSpacing": "1px",
+                  "lineHeight": "19px",
+                  "marginTop": "12px",
+                }
+              }
+              target="_blank"
+            >
+              JOIN MEETING
+            </a>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+`;
