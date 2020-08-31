@@ -15,11 +15,12 @@ const (
 )
 
 type configuration struct {
-	ProductType string
-	ClientID    string
-	Username    string
-	Password    string
-	Domain      string
+	ProductType       string
+	ClientID          string
+	Username          string
+	Password          string
+	Domain            string
+	LogClientRequests bool
 }
 
 func (c *configuration) Clone() *configuration {
@@ -94,6 +95,8 @@ func (p *Plugin) OnConfigurationChange() error {
 			return errors.Wrap(err, "failed to delete saved root URL in KV Store")
 		}
 	}
+
+	p.client.setLogRequests(configuration.LogClientRequests)
 
 	p.setConfiguration(configuration)
 

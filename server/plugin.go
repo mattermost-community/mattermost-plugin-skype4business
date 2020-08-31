@@ -49,6 +49,8 @@ type IClient interface {
 	performDiscovery(url string) (*DiscoveryResponse, error)
 	performRequestAndGetAuthHeader(url string) (*string, error)
 	readUserResource(url string, token string) (*UserResourceResponse, error)
+	setLogger(logger Logger)
+	setLogRequests(logRequests bool)
 }
 
 // Plugin represents the plugin api.
@@ -72,6 +74,9 @@ func (p *Plugin) OnActivate() error {
 	if err := config.IsValid(); err != nil {
 		return err
 	}
+
+	p.client.setLogger(p.API)
+	p.client.setLogRequests(config.LogClientRequests)
 
 	return nil
 }

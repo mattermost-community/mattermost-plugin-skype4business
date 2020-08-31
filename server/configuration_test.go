@@ -54,7 +54,9 @@ func TestPlugin_OnConfigurationChange(t *testing.T) {
 			api := &plugintest.API{}
 			api.On("LoadPluginConfiguration", &configuration{}).Return(tc.returnOfLoadPluginConfiguration)
 			api.On("KVDelete", RootURLKey).Return(tc.returnOfKVDelete)
-			p := Plugin{}
+			p := Plugin{
+				client: NewClient(),
+			}
 			p.setConfiguration(&configuration{Domain: tc.initialDomain})
 			p.SetAPI(api)
 

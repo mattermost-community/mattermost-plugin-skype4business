@@ -2,6 +2,7 @@ package main
 
 import (
 	"bytes"
+	"github.com/stretchr/testify/mock"
 	"io/ioutil"
 	"math"
 	"net/http"
@@ -37,11 +38,18 @@ var (
 	server *httptest.Server
 )
 
+type LoggerMock struct {
+	mock.Mock
+}
+
+func (l *LoggerMock) LogInfo(msg string, keyValuePairs ...interface{}) {}
+
 func TestClient(t *testing.T) {
 	setupTestServer(t)
 	defer teardown()
 
 	client := NewClient()
+	client.setLogger(&LoggerMock{})
 
 	t.Run("test authenticate", func(t *testing.T) {
 

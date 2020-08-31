@@ -7,6 +7,7 @@ import (
 	"io"
 	"io/ioutil"
 	"net/http"
+	"net/http/httputil"
 	"net/url"
 	"strings"
 
@@ -15,7 +16,14 @@ import (
 
 // Client is a new HTTP Client to talk to the Skype server
 type Client struct {
-	httpClient *http.Client
+	httpClient  *http.Client
+	logger      Logger
+	logRequests bool
+}
+
+// Logger is used for logging requests
+type Logger interface {
+	LogInfo(msg string, keyValuePairs ...interface{})
 }
 
 // NewClient returns a new Client
@@ -29,7 +37,16 @@ func NewClient() *Client {
 	}
 }
 
+func (c *Client) setLogger(logger Logger) {
+	c.logger = logger
+}
+
+func (c *Client) setLogRequests(logRequests bool) {
+	c.logRequests = logRequests
+}
+
 func (c *Client) authenticate(url string, body url.Values) (*AuthResponse, error) {
+	c.logger.LogInfo("Request in authenticate", "url", url, "body", body)
 	resp, err := c.httpClient.PostForm(url, body)
 	if err != nil {
 		return nil, err
@@ -50,6 +67,9 @@ func (c *Client) createNewApplication(url string, body interface{}, token string
 	if err != nil {
 		return nil, err
 	}
+	if c.logRequests {
+		c.logRequest("createNewApplication", req, true)
+	}
 	var newApplicationResponse NewApplicationResponse
 	_, err = c.do(req, &newApplicationResponse)
 	return &newApplicationResponse, err
@@ -60,6 +80,7 @@ func (c *Client) createNewMeeting(url string, body interface{}, token string) (*
 	if err != nil {
 		return nil, err
 	}
+	c.logRequest("createNewMeeting", req, true)
 	var newMeetingResponse NewMeetingResponse
 	_, err = c.do(req, &newMeetingResponse)
 	return &newMeetingResponse, err
@@ -70,6 +91,7 @@ func (c *Client) performDiscovery(url string) (*DiscoveryResponse, error) {
 	if err != nil {
 		return nil, err
 	}
+	c.logRequest("performDiscovery", req, false)
 	var discoveryResponse DiscoveryResponse
 	_, err = c.do(req, &discoveryResponse)
 	return &discoveryResponse, err
@@ -80,6 +102,7 @@ func (c *Client) readUserResource(url string, token string) (*UserResourceRespon
 	if err != nil {
 		return nil, err
 	}
+	c.logRequest("readUserResource", req, false)
 	var userResourceResponse UserResourceResponse
 	_, err = c.do(req, &userResourceResponse)
 	return &userResourceResponse, err
@@ -115,6 +138,7 @@ func (c *Client) performRequestAndGetAuthHeader(url string) (*string, error) {
 	if err != nil {
 		return nil, err
 	}
+	c.logRequest("performRequestAndGetAuthHeader", req, false)
 
 	resp, err := c.httpClient.Do(req)
 	if err != nil {
@@ -168,4 +192,11 @@ func (c *Client) validateResponse(resp *http.Response) error {
 	}
 
 	return nil
+}
+
+func (c *Client) logRequest(methodName string, r *http.Request, hasBody bool) {
+	if c.logRequests {
+		requestDump, _ := httputil.DumpRequest(r, hasBody)
+		c.logger.LogInfo("Request in "+methodName, "request", string(requestDump))
+	}
 }
