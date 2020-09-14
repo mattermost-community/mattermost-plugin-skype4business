@@ -50,7 +50,7 @@ type IClient interface {
 	performRequestAndGetAuthHeader(url string) (*string, error)
 	readUserResource(url string, token string) (*UserResourceResponse, error)
 	setLogger(logger Logger)
-	setLogRequests(logRequests bool)
+	setShouldLogRequests(shouldLogRequests bool)
 }
 
 // Plugin represents the plugin api.
@@ -76,7 +76,7 @@ func (p *Plugin) OnActivate() error {
 	}
 
 	p.client.setLogger(p.API)
-	p.client.setLogRequests(config.LogClientRequests)
+	p.client.setShouldLogRequests(config.ShouldLogClientRequests)
 
 	return nil
 }

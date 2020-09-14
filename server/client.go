@@ -16,9 +16,9 @@ import (
 
 // Client is a new HTTP Client to talk to the Skype server
 type Client struct {
-	httpClient  *http.Client
-	logger      Logger
-	logRequests bool
+	httpClient        *http.Client
+	logger            Logger
+	shouldLogRequests bool
 }
 
 // Logger is used for logging requests
@@ -41,8 +41,8 @@ func (c *Client) setLogger(logger Logger) {
 	c.logger = logger
 }
 
-func (c *Client) setLogRequests(logRequests bool) {
-	c.logRequests = logRequests
+func (c *Client) setShouldLogRequests(shouldLogRequests bool) {
+	c.shouldLogRequests = shouldLogRequests
 }
 
 func (c *Client) authenticate(url string, body url.Values) (*AuthResponse, error) {
@@ -67,9 +67,7 @@ func (c *Client) createNewApplication(url string, body interface{}, token string
 	if err != nil {
 		return nil, err
 	}
-	if c.logRequests {
-		c.logRequest("createNewApplication", req, true)
-	}
+	c.logRequest("createNewApplication", req, true)
 	var newApplicationResponse NewApplicationResponse
 	_, err = c.do(req, &newApplicationResponse)
 	return &newApplicationResponse, err
@@ -195,7 +193,7 @@ func (c *Client) validateResponse(resp *http.Response) error {
 }
 
 func (c *Client) logRequest(methodName string, r *http.Request, hasBody bool) {
-	if c.logRequests {
+	if c.shouldLogRequests {
 		requestDump, _ := httputil.DumpRequest(r, hasBody)
 		c.logger.LogInfo("Request in "+methodName, "request", string(requestDump))
 	}

@@ -15,12 +15,12 @@ const (
 )
 
 type configuration struct {
-	ProductType       string
-	ClientID          string
-	Username          string
-	Password          string
-	Domain            string
-	LogClientRequests bool
+	ProductType             string
+	ClientID                string
+	Username                string
+	Password                string
+	Domain                  string
+	ShouldLogClientRequests bool
 }
 
 func (c *configuration) Clone() *configuration {
@@ -96,7 +96,7 @@ func (p *Plugin) OnConfigurationChange() error {
 		}
 	}
 
-	p.client.setLogRequests(configuration.LogClientRequests)
+	p.client.setShouldLogRequests(configuration.ShouldLogClientRequests)
 
 	p.setConfiguration(configuration)
 

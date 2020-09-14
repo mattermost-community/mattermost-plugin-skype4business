@@ -433,7 +433,7 @@ type ClientMock struct {
 
 func (c *ClientMock) setLogger(logger Logger) {}
 
-func (c *ClientMock) setLogRequests(logRequests bool) {}
+func (c *ClientMock) setShouldLogRequests(shouldLogRequests bool) {}
 
 func (c *ClientMock) authenticate(url string, body url.Values) (*AuthResponse, error) {
 	ret := c.Called(url, body)
