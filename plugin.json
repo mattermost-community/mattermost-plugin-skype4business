@@ -62,7 +62,7 @@
         "key": "ShouldLogClientRequests",
         "display_name": "Enable logging requests to S4B server",
         "type": "bool",
-        "help_text": "Logging requests sent to S4B server for debugging purposes. Used only with Skype for Business Server. These logs will use the `INFO` log level, so make sure that `Console Log Level` is set to `INFO` in the `System Console`."
+        "help_text": "Logging requests sent to S4B server for debugging purposes. Used only with Skype for Business Server. These logs will use the `INFO` log level, so make sure that your Log Level is set to `INFO` in the `System Console`."
       }
     ],
     "footer": "To report an issue, make a suggestion or a contribution, [check the repository](https://github.com/kosgrz/mattermost-plugin-skype4business)."
