@@ -17,13 +17,8 @@ import (
 // Client is a new HTTP Client to talk to the Skype server
 type Client struct {
 	httpClient        *http.Client
-	logger            Logger
+	logger            ILogger
 	shouldLogRequests bool
-}
-
-// Logger is used for logging requests
-type Logger interface {
-	LogInfo(msg string, keyValuePairs ...interface{})
 }
 
 // NewClient returns a new Client
@@ -37,7 +32,7 @@ func NewClient() *Client {
 	}
 }
 
-func (c *Client) setLogger(logger Logger) {
+func (c *Client) setLogger(logger ILogger) {
 	c.logger = logger
 }
 

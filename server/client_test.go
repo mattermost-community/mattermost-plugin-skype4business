@@ -44,6 +44,8 @@ type LoggerMock struct {
 
 func (l *LoggerMock) LogInfo(msg string, keyValuePairs ...interface{}) {}
 
+func (l *LoggerMock) LogWarn(msg string, keyValuePairs ...interface{}) {}
+
 func TestClient(t *testing.T) {
 	setupTestServer(t)
 	defer teardown()

@@ -136,6 +136,7 @@ func TestPlugin(t *testing.T) {
 
 			p := Plugin{
 				client: &ClientMock{},
+				logger: &LoggerMock{},
 			}
 			p.setConfiguration(&configuration{
 				ClientID:    "123123123",
@@ -276,7 +277,10 @@ func makeMocks(mmChannelID string, mmUser model.User, splitDomain bool) Mocks {
 		tokenToBeUsed,
 	).Return(&newMeetingResponseToReturn, nil).Times(1)
 
-	p := Plugin{client: &clientMock}
+	p := Plugin{
+		client: &clientMock,
+		logger: &LoggerMock{},
+	}
 	p.SetAPI(&api)
 	p.setConfiguration(&pluginConfigToReturn)
 
@@ -431,7 +435,7 @@ type ClientMock struct {
 	mock.Mock
 }
 
-func (c *ClientMock) setLogger(logger Logger) {}
+func (c *ClientMock) setLogger(logger ILogger) {}
 
 func (c *ClientMock) setShouldLogRequests(shouldLogRequests bool) {}
 
