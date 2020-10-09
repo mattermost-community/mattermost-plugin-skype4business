@@ -1,14 +1,14 @@
 package main
 
 import (
+	"testing"
+
 	"github.com/mattermost/mattermost-server/v5/model"
 	"github.com/mattermost/mattermost-server/v5/plugin/plugintest"
 	"github.com/stretchr/testify/assert"
-	"testing"
 )
 
 func TestPlugin_OnConfigurationChange(t *testing.T) {
-
 	for name, tc := range map[string]struct {
 		initialDomain                          string
 		returnOfLoadPluginConfiguration        error

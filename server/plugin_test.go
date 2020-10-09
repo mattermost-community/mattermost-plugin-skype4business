@@ -16,7 +16,6 @@ import (
 )
 
 func TestPlugin(t *testing.T) {
-
 	validMeetingRequest := httptest.NewRequest("POST", "/api/v1/register_meeting_from_online_version", strings.NewReader("{\"channel_id\": \"thechannelid\", \"meeting_id\": \"L30IC51J\"}"))
 	validMeetingRequest.Header.Add("Mattermost-User-Id", "theuserid")
 
@@ -150,7 +149,6 @@ func TestPlugin(t *testing.T) {
 	}
 
 	t.Run("create_meeting_in_server_version", func(t *testing.T) {
-
 		mmChannelID := "234"
 		mmUser := model.User{Id: "userNo123", Email: "user123@test.com", Username: "testusername"}
 		w := httptest.NewRecorder()

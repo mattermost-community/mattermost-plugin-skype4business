@@ -29,23 +29,23 @@ func (c *configuration) Clone() *configuration {
 
 func (c *configuration) IsValid() error {
 	if c.ProductType != productTypeOnline && c.ProductType != productTypeServer {
-		return errors.New("Product Type is not configured")
+		return errors.New("product Type is not configured")
 	}
 
 	if c.ProductType == productTypeServer {
 		if c.Username == "" {
-			return errors.New("Username is not configured")
+			return errors.New("username is not configured")
 		}
 
 		if c.Password == "" {
-			return errors.New("Password is not configured")
+			return errors.New("password is not configured")
 		}
 
 		if c.Domain == "" {
-			return errors.New("Domain is not configured")
+			return errors.New("domain is not configured")
 		}
 	} else if c.ClientID == "" {
-		return errors.New("ClientID is not configured")
+		return errors.New("clientID is not configured")
 	}
 
 	return nil
