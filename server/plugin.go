@@ -137,7 +137,10 @@ func (p *Plugin) handleAuthorizeInADD(w http.ResponseWriter, r *http.Request) (i
 		return http.StatusBadRequest, errors.New("cannot authorize in ADD. Missing state' param")
 	}
 
-	p.API.KVSet(state, []byte(strings.TrimSpace(userID)))
+	appErr := p.API.KVSet(state, []byte(strings.TrimSpace(userID)))
+	if appErr != nil {
+		return http.StatusInternalServerError, errors.Wrap(appErr, "cannot authorize in ADD. An error occurred while storing the OAuth state")
+	}
 
 	http.Redirect(w, r, authURL, http.StatusFound)
 	return http.StatusOK, nil
@@ -196,7 +199,7 @@ func (p *Plugin) completeAuthorizeInADD(w http.ResponseWriter, r *http.Request) 
 
 	w.WriteHeader(http.StatusOK)
 	w.Header().Set("Content-Type", "text/html")
-	w.Write([]byte(html))
+	_, _ = w.Write([]byte(html))
 
 	return http.StatusOK, nil
 }
@@ -290,7 +293,7 @@ func (p *Plugin) handleRegisterMeetingFromOnlineVersion(w http.ResponseWriter, r
 			"override_username": PostMeetingOverrideUsername,
 			"meeting_status":    "STARTED",
 			"from_webhook":      "true",
-			"override_icon_url": path.Join(*serverConfiguration.ServiceSettings.SiteURL, "plugins", manifest.ID, "api", "v1", "assets", "profile.png"),
+			"override_icon_url": path.Join(*serverConfiguration.ServiceSettings.SiteURL, "plugins", manifest.Id, "api", "v1", "assets", "profile.png"),
 		},
 	}
 
@@ -305,7 +308,7 @@ func (p *Plugin) handleRegisterMeetingFromOnlineVersion(w http.ResponseWriter, r
 			errors.Wrap(appErr, "cannot register meeting. An error occurred while saving the meeting ID in the database")
 	}
 
-	w.Write([]byte(fmt.Sprintf("%v", req.MeetingID)))
+	_, _ = w.Write([]byte(fmt.Sprintf("%v", req.MeetingID)))
 
 	return http.StatusOK, nil
 }
@@ -378,7 +381,7 @@ func (p *Plugin) handleCreateMeetingInServerVersion(w http.ResponseWriter, r *ht
 			"meeting_topic":     "Meeting created by " + user.Username,
 			"meeting_status":    "STARTED",
 			"from_webhook":      "true",
-			"override_icon_url": path.Join(*serverConfiguration.ServiceSettings.SiteURL, "plugins", manifest.ID, "api", "v1", "assets", "profile.png"),
+			"override_icon_url": path.Join(*serverConfiguration.ServiceSettings.SiteURL, "plugins", manifest.Id, "api", "v1", "assets", "profile.png"),
 		},
 	}
 
@@ -416,7 +419,7 @@ func (p *Plugin) handleProfileImage(w http.ResponseWriter) (int, error) {
 	defer img.Close()
 
 	w.Header().Set("Content-Type", "image/png")
-	io.Copy(w, img)
+	_, _ = io.Copy(w, img)
 
 	return http.StatusOK, nil
 }
