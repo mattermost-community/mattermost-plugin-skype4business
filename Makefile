@@ -93,14 +93,6 @@ else
 endif
 endif
 
-## Builds the webapp in debug mode, if it exists.
-.PHONY: webapp-debug
-webapp-debug: webapp/.npminstall
-ifneq ($(HAS_WEBAPP),)
-	cd webapp && \
-	$(NPM) run debug;
-endif
-
 ## Generates a tar bundle of the plugin for install.
 .PHONY: bundle
 bundle:
