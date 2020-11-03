@@ -24,7 +24,7 @@ const manifest = JSON.parse(`
     },
     "settings_schema": {
         "header": "",
-        "footer": "To report an issue, make a suggestion or a contribution, [check the repository](https://github.com/kosgrz/mattermost-plugin-skype4business).",
+        "footer": "To report an issue, make a suggestion or a contribution, [check the repository](https://github.com/mattermost/mattermost-plugin-skype4business).",
         "settings": [
             {
                 "key": "productType",

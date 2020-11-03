@@ -316,12 +316,12 @@ func (p *Plugin) handleRegisterMeetingFromOnlineVersion(w http.ResponseWriter, r
 func (p *Plugin) handleCreateMeetingInServerVersion(w http.ResponseWriter, r *http.Request) (int, error) {
 	config := p.getConfiguration()
 	if config.ProductType == productTypeOnline {
-		return http.StatusForbidden, errors.New("Cannot create meeting. Product Type is not set as 'server'")
+		return http.StatusForbidden, errors.New("cannot create meeting. Product Type is not set as 'server'")
 	}
 
 	userID := r.Header.Get("Mattermost-User-Id")
 	if userID == "" {
-		return http.StatusUnauthorized, errors.New("Cannot create meeting. Missing 'Mattermost-User-Id' header")
+		return http.StatusUnauthorized, errors.New("cannot create meeting. Missing 'Mattermost-User-Id' header")
 	}
 
 	var user *model.User
@@ -485,7 +485,6 @@ func (p *Plugin) getApplicationState(discoveryURL string) (*ApplicationState, *A
 
 	applicationsURL := userResourceResponse.Links.Applications.Href
 	if applicationsURL != "" {
-
 		applicationsResourceName := p.extractResourceNameFromApplicationsURL(applicationsURL)
 		if applicationsResourceName != resourceName {
 			p.API.LogWarn("Resource from applications URL is not the same as resource name from user URL")

@@ -44,7 +44,6 @@ func TestClient(t *testing.T) {
 	client := NewClient()
 
 	t.Run("test authenticate", func(t *testing.T) {
-
 		r, err := client.authenticate(server.URL+URLAuthenticate, url.Values{})
 
 		assert.Nil(t, err)
@@ -63,7 +62,6 @@ func TestClient(t *testing.T) {
 	})
 
 	t.Run("test createNewApplication", func(t *testing.T) {
-
 		r, err := client.createNewApplication(server.URL+URLCreateNewApp, &NewApplicationRequest{}, TestToken)
 
 		assert.Nil(t, err)
@@ -87,7 +85,6 @@ func TestClient(t *testing.T) {
 	})
 
 	t.Run("test createNewMeeting", func(t *testing.T) {
-
 		r, err := client.createNewMeeting(server.URL+URLCreateNewMeeting, &NewMeetingRequest{}, TestToken)
 
 		assert.Nil(t, err)
@@ -102,7 +99,6 @@ func TestClient(t *testing.T) {
 	})
 
 	t.Run("test performDiscovery", func(t *testing.T) {
-
 		r, err := client.performDiscovery(server.URL + URLPerformDiscovery)
 
 		assert.Nil(t, err)
@@ -116,7 +112,6 @@ func TestClient(t *testing.T) {
 	})
 
 	t.Run("test performRequestAndGetAuthHeader", func(t *testing.T) {
-
 		r, err := client.performRequestAndGetAuthHeader(server.URL + URLResponseWithAuthHeader)
 
 		assert.Nil(t, err)
@@ -139,7 +134,6 @@ func TestClient(t *testing.T) {
 	})
 
 	t.Run("test readUserResource", func(t *testing.T) {
-
 		r, err := client.readUserResource(server.URL+URLReadUserResource, TestToken)
 
 		assert.Nil(t, err)
@@ -153,7 +147,6 @@ func TestClient(t *testing.T) {
 	})
 
 	t.Run("test validateResponse", func(t *testing.T) {
-
 		resp := &http.Response{
 			StatusCode: http.StatusOK,
 		}
