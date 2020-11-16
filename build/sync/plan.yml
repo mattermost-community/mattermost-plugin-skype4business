@@ -1,0 +1,30 @@
+checks:
+  - type: repo_is_clean
+    params:
+      repo: template
+  - type: repo_is_clean
+    params:
+      repo: plugin
+actions:
+  - paths:
+      - build
+    actions:
+      - type: overwrite_directory
+        params:
+          create: true
+  - paths:
+      - .circleci/config.yml
+      - .editorconfig
+      - .gitignore
+      - Makefile
+      - webapp/.eslintrc.json
+      - webapp/.gitignore
+      - webapp/babel.config.js
+      - webapp/package.json
+      - webapp/src/manifest.test.js
+      - webapp/tsconfig.json
+      - webapp/webpack.config.js
+    actions:
+      - type: overwrite_file
+        params:
+          create: true

@@ -124,12 +124,12 @@ func (p *Plugin) handleAuthorizeInADD(w http.ResponseWriter, r *http.Request) (i
 
 	authURL, err := url.QueryUnescape(encodedAuthURL)
 	if err != nil {
-		return http.StatusBadRequest, errors.Wrap(err, "cannot authorize in ADD. An error occured while decoding URL")
+		return http.StatusBadRequest, errors.Wrap(err, "cannot authorize in ADD. An error occurred while decoding URL")
 	}
 
 	authURLValues, err := url.ParseQuery(authURL)
 	if err != nil {
-		return http.StatusBadRequest, errors.Wrap(err, "cannot authorize in ADD. An error occured while parsing URL")
+		return http.StatusBadRequest, errors.Wrap(err, "cannot authorize in ADD. An error occurred while parsing URL")
 	}
 
 	state := authURLValues.Get("state")
@@ -137,7 +137,10 @@ func (p *Plugin) handleAuthorizeInADD(w http.ResponseWriter, r *http.Request) (i
 		return http.StatusBadRequest, errors.New("cannot authorize in ADD. Missing state' param")
 	}
 
-	p.API.KVSet(state, []byte(strings.TrimSpace(userID)))
+	appErr := p.API.KVSet(state, []byte(strings.TrimSpace(userID)))
+	if appErr != nil {
+		return http.StatusInternalServerError, errors.Wrap(appErr, "cannot authorize in ADD. An error occurred while storing the OAuth state")
+	}
 
 	http.Redirect(w, r, authURL, http.StatusFound)
 	return http.StatusOK, nil
@@ -157,7 +160,7 @@ func (p *Plugin) completeAuthorizeInADD(w http.ResponseWriter, r *http.Request) 
 	userID, err := p.API.KVGet(state)
 	if err != nil {
 		return http.StatusBadRequest,
-			errors.Wrap(err, "cannot complete authorization in ADD. An error occured while fetching stored state")
+			errors.Wrap(err, "cannot complete authorization in ADD. An error occurred while fetching stored state")
 	}
 
 	if userID == nil {
@@ -166,7 +169,7 @@ func (p *Plugin) completeAuthorizeInADD(w http.ResponseWriter, r *http.Request) 
 
 	err = p.API.KVDelete(state)
 	if err != nil {
-		p.API.LogWarn("An error occured while completing authorization in ADD. Cannot delete stored state",
+		p.API.LogWarn("An error occurred while completing authorization in ADD. Cannot delete stored state",
 			"err", err)
 	}
 
@@ -196,7 +199,7 @@ func (p *Plugin) completeAuthorizeInADD(w http.ResponseWriter, r *http.Request) 
 
 	w.WriteHeader(http.StatusOK)
 	w.Header().Set("Content-Type", "text/html")
-	w.Write([]byte(html))
+	_, _ = w.Write([]byte(html))
 
 	return http.StatusOK, nil
 }
@@ -237,7 +240,7 @@ func (p *Plugin) handleProductType(w http.ResponseWriter, r *http.Request) (int,
 	})
 	if err != nil {
 		return http.StatusInternalServerError,
-			errors.Wrap(err, "cannot fetch Product Type. An error occured while encoding the product type response")
+			errors.Wrap(err, "cannot fetch Product Type. An error occurred while encoding the product type response")
 	}
 
 	return http.StatusOK, nil
@@ -251,7 +254,7 @@ func (p *Plugin) handleRegisterMeetingFromOnlineVersion(w http.ResponseWriter, r
 
 	user, appErr := p.API.GetUser(userID)
 	if appErr != nil {
-		return appErr.StatusCode, errors.Wrap(appErr, "cannot register meeting. An error occured while fetching user")
+		return appErr.StatusCode, errors.Wrap(appErr, "cannot register meeting. An error occurred while fetching user")
 	}
 
 	if user == nil {
@@ -269,11 +272,11 @@ func (p *Plugin) handleRegisterMeetingFromOnlineVersion(w http.ResponseWriter, r
 
 	var req StartMeetingRequest
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-		return http.StatusBadRequest, errors.Wrap(err, "cannot register meeting. An error occured while decoding JSON body")
+		return http.StatusBadRequest, errors.Wrap(err, "cannot register meeting. An error occurred while decoding JSON body")
 	}
 
 	if _, appErr = p.API.GetChannelMember(req.ChannelID, user.Id); appErr != nil {
-		return http.StatusForbidden, errors.Wrap(appErr, "cannot register meeting. An error occured while fetching channel membership")
+		return http.StatusForbidden, errors.Wrap(appErr, "cannot register meeting. An error occurred while fetching channel membership")
 	}
 
 	serverConfiguration := p.API.GetConfig()
@@ -290,22 +293,22 @@ func (p *Plugin) handleRegisterMeetingFromOnlineVersion(w http.ResponseWriter, r
 			"override_username": PostMeetingOverrideUsername,
 			"meeting_status":    "STARTED",
 			"from_webhook":      "true",
-			"override_icon_url": path.Join(*serverConfiguration.ServiceSettings.SiteURL, "plugins", manifest.ID, "api", "v1", "assets", "profile.png"),
+			"override_icon_url": path.Join(*serverConfiguration.ServiceSettings.SiteURL, "plugins", manifest.Id, "api", "v1", "assets", "profile.png"),
 		},
 	}
 
 	post, appErr = p.API.CreatePost(post)
 	if appErr != nil {
 		return appErr.StatusCode,
-			errors.Wrap(appErr, "cannot register meeting. An error occured while creating a post with the meeting")
+			errors.Wrap(appErr, "cannot register meeting. An error occurred while creating a post with the meeting")
 	}
 
 	if appErr = p.API.KVSet(fmt.Sprintf("%v%v", PostMeetingKey, req.MeetingID), []byte(post.Id)); appErr != nil {
 		return appErr.StatusCode,
-			errors.Wrap(appErr, "cannot register meeting. An error occured while saving the meeting ID in the database")
+			errors.Wrap(appErr, "cannot register meeting. An error occurred while saving the meeting ID in the database")
 	}
 
-	w.Write([]byte(fmt.Sprintf("%v", req.MeetingID)))
+	_, _ = w.Write([]byte(fmt.Sprintf("%v", req.MeetingID)))
 
 	return http.StatusOK, nil
 }
@@ -313,12 +316,12 @@ func (p *Plugin) handleRegisterMeetingFromOnlineVersion(w http.ResponseWriter, r
 func (p *Plugin) handleCreateMeetingInServerVersion(w http.ResponseWriter, r *http.Request) (int, error) {
 	config := p.getConfiguration()
 	if config.ProductType == productTypeOnline {
-		return http.StatusForbidden, errors.New("Cannot create meeting. Product Type is not set as 'server'")
+		return http.StatusForbidden, errors.New("cannot create meeting. Product Type is not set as 'server'")
 	}
 
 	userID := r.Header.Get("Mattermost-User-Id")
 	if userID == "" {
-		return http.StatusUnauthorized, errors.New("Cannot create meeting. Missing 'Mattermost-User-Id' header")
+		return http.StatusUnauthorized, errors.New("cannot create meeting. Missing 'Mattermost-User-Id' header")
 	}
 
 	var user *model.User
@@ -326,7 +329,7 @@ func (p *Plugin) handleCreateMeetingInServerVersion(w http.ResponseWriter, r *ht
 	user, appError = p.API.GetUser(userID)
 	if appError != nil {
 		return appError.StatusCode,
-			errors.Wrap(appError, "cannot create meeting. An error occured while fetching user")
+			errors.Wrap(appError, "cannot create meeting. An error occurred while fetching user")
 	}
 
 	if user == nil {
@@ -337,18 +340,18 @@ func (p *Plugin) handleCreateMeetingInServerVersion(w http.ResponseWriter, r *ht
 	var req StartServerMeetingRequest
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
 		return http.StatusBadRequest,
-			errors.Wrap(err, "cannot create meeting. An error occured while decoding JSON body")
+			errors.Wrap(err, "cannot create meeting. An error occurred while decoding JSON body")
 	}
 
 	if _, err := p.API.GetChannelMember(req.ChannelID, user.Id); err != nil {
 		return http.StatusForbidden,
-			errors.Wrap(err, "cannot create meeting. An error occured while fetching channel membership")
+			errors.Wrap(err, "cannot create meeting. An error occurred while fetching channel membership")
 	}
 
 	applicationState, apiErr := p.fetchOnlineMeetingsURL()
 	if apiErr != nil {
 		return http.StatusInternalServerError,
-			errors.Errorf("cannot create meeting. An error occured while fetching meetings resource URL: %+v", apiErr)
+			errors.Errorf("cannot create meeting. An error occurred while fetching meetings resource URL: %+v", apiErr)
 	}
 
 	newMeetingResponse, err := p.client.createNewMeeting(
@@ -361,7 +364,7 @@ func (p *Plugin) handleCreateMeetingInServerVersion(w http.ResponseWriter, r *ht
 	)
 	if err != nil {
 		return http.StatusInternalServerError,
-			errors.Wrap(err, "cannot create meeting. An error occured while creating a new meeting in UCWA")
+			errors.Wrap(err, "cannot create meeting. An error occurred while creating a new meeting in UCWA")
 	}
 
 	serverConfiguration := p.API.GetConfig()
@@ -378,25 +381,25 @@ func (p *Plugin) handleCreateMeetingInServerVersion(w http.ResponseWriter, r *ht
 			"meeting_topic":     "Meeting created by " + user.Username,
 			"meeting_status":    "STARTED",
 			"from_webhook":      "true",
-			"override_icon_url": path.Join(*serverConfiguration.ServiceSettings.SiteURL, "plugins", manifest.ID, "api", "v1", "assets", "profile.png"),
+			"override_icon_url": path.Join(*serverConfiguration.ServiceSettings.SiteURL, "plugins", manifest.Id, "api", "v1", "assets", "profile.png"),
 		},
 	}
 
 	post, appErr := p.API.CreatePost(post)
 	if appErr != nil {
 		return http.StatusInternalServerError,
-			errors.Wrap(appError, "cannot create meeting. An error occured while creating a post with a meeting")
+			errors.Wrap(appError, "cannot create meeting. An error occurred while creating a post with a meeting")
 	}
 
 	appErr = p.API.KVSet(fmt.Sprintf("%v%v", PostMeetingKey, newMeetingResponse.MeetingID), []byte(post.Id))
 	if appErr != nil {
 		return http.StatusInternalServerError,
-			errors.Wrap(appError, "cannot create meeting. An error occured while saving the meeting ID in the database")
+			errors.Wrap(appError, "cannot create meeting. An error occurred while saving the meeting ID in the database")
 	}
 
 	if err := json.NewEncoder(w).Encode(&newMeetingResponse); err != nil {
 		return http.StatusInternalServerError,
-			errors.Wrap(err, "cannot create meeting. An error occured while encoding the new meeting response")
+			errors.Wrap(err, "cannot create meeting. An error occurred while encoding the new meeting response")
 	}
 
 	return http.StatusOK, nil
@@ -406,17 +409,17 @@ func (p *Plugin) handleProfileImage(w http.ResponseWriter) (int, error) {
 	bundlePath, err := p.API.GetBundlePath()
 	if err != nil {
 		return http.StatusInternalServerError,
-			errors.Wrap(err, "cannot fetch profile image. An error occured while fetching the bundle path")
+			errors.Wrap(err, "cannot fetch profile image. An error occurred while fetching the bundle path")
 	}
 	img, err := os.Open(filepath.Join(bundlePath, "assets", "profile.png"))
 	if err != nil {
 		return http.StatusNotFound,
-			errors.Wrap(err, "cannot fetch profile image. An error occured while reading the profile image file")
+			errors.Wrap(err, "cannot fetch profile image. An error occurred while reading the profile image file")
 	}
 	defer img.Close()
 
 	w.Header().Set("Content-Type", "image/png")
-	io.Copy(w, img)
+	_, _ = io.Copy(w, img)
 
 	return http.StatusOK, nil
 }
@@ -453,12 +456,12 @@ func (p *Plugin) fetchOnlineMeetingsURL() (*ApplicationState, *APIError) {
 func (p *Plugin) getApplicationState(discoveryURL string) (*ApplicationState, *APIError) {
 	config := p.getConfiguration()
 
-	DiscoveryResponse, err := p.client.performDiscovery(discoveryURL)
+	discoveryResponse, err := p.client.performDiscovery(discoveryURL)
 	if err != nil {
 		return nil, &APIError{Message: "Error performing autodiscovery: " + err.Error()}
 	}
 
-	authHeader, err := p.client.performRequestAndGetAuthHeader(DiscoveryResponse.Links.User.Href)
+	authHeader, err := p.client.performRequestAndGetAuthHeader(discoveryResponse.Links.User.Href)
 	if err != nil {
 		return nil, &APIError{Message: "Error performing request to get authentication header: " + err.Error()}
 	}
@@ -468,7 +471,7 @@ func (p *Plugin) getApplicationState(discoveryURL string) (*ApplicationState, *A
 		return nil, apiErr
 	}
 
-	userResourceURL := DiscoveryResponse.Links.User.Href
+	userResourceURL := discoveryResponse.Links.User.Href
 	resourceName := p.extractResourceNameFromUserURL(userResourceURL)
 	authResponse, err := p.authenticate(*tokenURL, resourceName, *config)
 	if err != nil {
@@ -482,7 +485,6 @@ func (p *Plugin) getApplicationState(discoveryURL string) (*ApplicationState, *A
 
 	applicationsURL := userResourceResponse.Links.Applications.Href
 	if applicationsURL != "" {
-
 		applicationsResourceName := p.extractResourceNameFromApplicationsURL(applicationsURL)
 		if applicationsResourceName != resourceName {
 			p.API.LogWarn("Resource from applications URL is not the same as resource name from user URL")
@@ -569,7 +571,7 @@ func (p *Plugin) determineRootURL(domain string) (*string, *APIError) {
 			return &o.url, nil
 		}
 
-		p.API.LogWarn("An error occued while performing autodiscovery with "+o.name+" root URL",
+		p.API.LogWarn("An error occurred while performing autodiscovery with "+o.name+" root URL",
 			"err", err)
 	}
 
