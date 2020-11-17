@@ -19,12 +19,12 @@
   },
   "dependencies": {
     "adal-angular": "1.0.17",
+    "mattermost-redux": "5.24.0",
     "core-js": "3.6.5",
     "prop-types": "15.7.2",
-    "react": "16.8.6",
-    "react-redux": "5.0.7",
-    "redux": "4.0.4",
-    "superagent": "5.1.0",
+    "react": "16.13.1",
+    "react-redux": "7.2.0",
+    "redux": "4.0.5",
     "typescript": "3.9.7"
   },
   "devDependencies": {

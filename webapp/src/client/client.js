@@ -1,8 +1,10 @@
-import request from 'superagent';
+import {Client4} from 'mattermost-redux/client';
+import {ClientError} from 'mattermost-redux/client/client4';
 import AuthenticationContext from 'adal-angular';
 
 import {isDesktopApp} from '../utils/user_utils';
 import {Periods} from '../constants';
+import {id as pluginID} from '../manifest';
 
 // workaround for the "Token renewal operation failed due to timeout" issue
 // https://github.com/AzureAD/azure-activedirectory-library-for-js/issues/391#issuecomment-384784134
@@ -41,7 +43,7 @@ AuthenticationContext.prototype._addAdalFrame = function _addAdalFrame(iframeId)
         } else if (document.body && document.body.insertAdjacentHTML) {
             document.body.insertAdjacentHTML(
                 'beforeEnd',
-                '<iframe name="' + iframeId + '" id="' + iframeId + '" style="display:none"></iframe>'
+                `<iframe name="${iframeId}" id="${iframeId}" style="display:none"></iframe>`,
             );
         }
         if (window.frames && window.frames[iframeId]) {
@@ -157,28 +159,19 @@ export default class Client {
     };
 
     getClientId = async () => {
-        const response = await request.
-            get(this.clientIdUrl).
-            set('Accept', 'application/json');
+        const response = await this.doGet(this.clientIdUrl);
 
-        return response.body.client_id;
+        return response.client_id;
     };
 
     doCreateMeetingInServerVersion = async (channelId, personal) => {
-        const headers = {};
-        headers['X-Requested-With'] = 'XMLHttpRequest';
+        const body = {
+            channel_id: channelId,
+            personal,
+        };
+        const response = await this.doPost(this.createMeetingInServerVersionUrl, body);
 
-        const response = await request.
-            post(this.createMeetingInServerVersionUrl).
-            send({
-                channel_id: channelId,
-                personal,
-            }).
-            set(headers).
-            type('application/json').
-            accept('application/json');
-
-        return response.body;
+        return response;
     };
 
     doCreateMeetingInOnlineVersion = async (channelId, currentUserId, getAuthenticationResult, personal, topic) => {
@@ -206,7 +199,7 @@ export default class Client {
 
         const {meetingId, meetingUrl} = await this.sendMeetingData(url, accessTokenToApplicationResource);
 
-        this.sendPost(this.registerMeetingFromOnlineVersionUrl, {
+        this.doPost(this.registerMeetingFromOnlineVersionUrl, {
             channel_id: channelId,
             personal,
             topic,
@@ -216,21 +209,16 @@ export default class Client {
     };
 
     getApplicationsHref = async (autodiscoverServiceUrl) => {
-        const autodiscoverResponse = await request.
-            get(autodiscoverServiceUrl).
-            set('Accept', 'application/json');
+        const autodiscoverResponse = await this.doGet(autodiscoverServiceUrl, {}, 'omit');
 
         // eslint-disable-next-line no-underscore-dangle
-        const userResourceHref = autodiscoverResponse.body._links.user.href;
+        const userResourceHref = autodiscoverResponse._links.user.href;
         const userResourceName = userResourceHref.substring(0, userResourceHref.indexOf('/Autodiscover'));
         const accessTokenToUserResource = await this.getAccessTokenForResource(userResourceName);
-        const userResourceResponse = await request.
-            get(userResourceHref).
-            set('Authorization', 'Bearer ' + accessTokenToUserResource).
-            set('Accept', 'application/json');
+        const userResourceResponse = await this.doGet(userResourceHref, {Authorization: 'Bearer ' + accessTokenToUserResource}, 'omit');
 
         // eslint-disable-next-line no-underscore-dangle
-        const links = userResourceResponse.body._links;
+        const links = userResourceResponse._links;
 
         if (links.applications) {
             return links.applications.href;
@@ -251,18 +239,14 @@ export default class Client {
             EndpointId: endpointId,
             Culture: 'en-US',
         };
-        const response = await request.
-            post(oauthApplicationHref).
-            set('Authorization', authorizationValue).
-            set('Accept', 'application/json').
-            send(data);
+        const response = await this.doPost(oauthApplicationHref, data, {Authorization: authorizationValue}, 'omit');
 
-        if (response.body.endpointId !== endpointId) {
+        if (response.endpointId !== endpointId) {
             throw new Error('Endpoints don\'t match!');
         }
 
         // eslint-disable-next-line no-underscore-dangle
-        return response.body._embedded.onlineMeetings._links.myOnlineMeetings.href;
+        return response._embedded.onlineMeetings._links.myOnlineMeetings.href;
     };
 
     sendMeetingData = async (url, appAccessToken) => {
@@ -271,29 +255,70 @@ export default class Client {
             automaticLeaderAssignment: 'SameEnterprise',
         };
 
-        const response = await request.
-            post(url).
-            set('Authorization', 'Bearer ' + appAccessToken).
-            set('Accept', 'application/json').
-            send(data);
+        const response = await this.doPost(url, data, {Authorization: 'Bearer ' + appAccessToken});
 
         return {
-            meetingId: response.body.onlineMeetingId,
-            meetingUrl: response.body.joinUrl,
+            meetingId: response.onlineMeetingId,
+            meetingUrl: response.joinUrl,
         };
     };
 
-    sendPost = async (url, body, headers = {}) => {
-        headers['X-Requested-With'] = 'XMLHttpRequest';
+    doGet = async (url, headers = {}, credentials) => {
+        headers.Accept = 'application/json';
+        let options = {
+            method: 'get',
+            headers,
+        };
 
-        const response = await request.
-            post(url).
-            send(body).
-            set(headers).
-            type('application/json').
-            accept('application/json');
+        if (url.includes('plugins/' + pluginID)) {
+            options = Client4.getOptions(options);
+        }
 
-        return response.body;
+        if (credentials) {
+            options.credentials = credentials;
+        }
+
+        const response = await fetch(url, options);
+
+        if (response.ok) {
+            return response.json();
+        }
+
+        const text = await response.text();
+
+        throw new ClientError(Client4.url, {
+            message: text || '',
+            status_code: response.status,
+            url,
+        });
+    }
+
+    doPost = async (url, body, headers = {}) => {
+        headers.Accept = 'application/json';
+        headers['Content-Type'] = 'application/json';
+        let options = {
+            method: 'post',
+            body: JSON.stringify(body),
+            headers,
+        };
+
+        if (url.includes('plugins/' + pluginID)) {
+            options = Client4.getOptions(options);
+        }
+
+        const response = await fetch(url, options);
+
+        if (response.ok) {
+            return response.json();
+        }
+
+        const text = await response.text();
+
+        throw new ClientError(Client4.url, {
+            message: text || '',
+            status_code: response.status,
+            url,
+        });
     };
 
     generateUuid4 = () => {
@@ -349,10 +374,8 @@ export default class Client {
     };
 
     isServerVersion = async () => {
-        const response = await request.
-            get(this.productTypeUrl).
-            set('Accept', 'application/json');
+        const response = await this.doGet(this.productTypeUrl);
 
-        return response.body.product_type === 'server';
+        return response.product_type === 'server';
     };
 }
