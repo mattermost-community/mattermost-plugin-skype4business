@@ -50,7 +50,7 @@
         "key": "Domain",
         "display_name": "Server Domain:",
         "type": "text",
-        "help_text": "The domain of your Skype for Business server instance. For example, contoso.com. Only required for Skype for Business Server."
+        "help_text": "The domain of your Skype for Business server instance. For example: contoso.com. Only required for Skype for Business Server."
       },
       {
         "key": "ClientId",
@@ -60,5 +60,6 @@
       }
     ],
     "footer": "To report an issue, make a suggestion, or submit a contribution, [check the repository](https://github.com/mattermost/mattermost-plugin-skype4business)."
+
   }
 }
