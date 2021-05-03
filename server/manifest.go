@@ -34,11 +34,11 @@ const manifestStr = `
   },
   "settings_schema": {
     "header": "",
-    "footer": "To report an issue, make a suggestion or a contribution, [check the repository](https://github.com/mattermost/mattermost-plugin-skype4business).",
+    "footer": "To report an issue, make a suggestion, or submit a contribution, [check the repository](https://github.com/mattermost/mattermost-plugin-skype4business).",
     "settings": [
       {
         "key": "productType",
-        "display_name": "Skype for Business Product Type",
+        "display_name": "Skype for Business Product Type:",
         "type": "radio",
         "help_text": "The product type of your Skype for Business instance.",
         "placeholder": "",
@@ -56,7 +56,7 @@ const manifestStr = `
       },
       {
         "key": "Username",
-        "display_name": "Skype for Business Bot Username",
+        "display_name": "Skype for Business Bot Username:",
         "type": "text",
         "help_text": "Username of your selected bot account. We strongly recommend using a dedicated bot account for this plugin, rather than an existing Skype for Business user account. Only required for Skype for Business Server.",
         "placeholder": "",
@@ -64,7 +64,7 @@ const manifestStr = `
       },
       {
         "key": "Password",
-        "display_name": "Skype for Business Bot Password",
+        "display_name": "Skype for Business Bot Password:",
         "type": "text",
         "help_text": "Password of your selected bot account. Only required for Skype for Business Server.",
         "placeholder": "",
@@ -72,17 +72,17 @@ const manifestStr = `
       },
       {
         "key": "Domain",
-        "display_name": "Server Domain",
+        "display_name": "Server Domain:",
         "type": "text",
-        "help_text": "The domain of your Skype for Business server instance. For example, contoso.com. Only required for Skype for Business Server.",
+        "help_text": "The domain of your Skype for Business server instance. For example: contoso.com. Only required for Skype for Business Server.",
         "placeholder": "",
         "default": null
       },
       {
         "key": "ClientId",
-        "display_name": "Application ID",
+        "display_name": "Application ID:",
         "type": "text",
-        "help_text": "Application ID from the Azure Active Directory. Only required for Skype for Business Online. Use this URL to configure the plugin in Azure Active Directory: https://SITEURL/plugins/skype4business/api/v1/auth_redirect",
+        "help_text": "Application ID from the Azure Active Directory. Only required for Skype for Business Online. Use this URL to configure the plugin in Azure Active Directory: https://SITEURL/plugins/skype4business/api/v1/auth_redirect.",
         "placeholder": "",
         "default": null
       }
