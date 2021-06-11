@@ -264,6 +264,7 @@ export default class Client {
     };
 
     doGet = async (url, headers = {}, credentials) => {
+        let domain = window.location.origin + '/' + url;
         headers.Accept = 'application/json';
         let options = {
             method: 'get',
@@ -278,7 +279,7 @@ export default class Client {
             options.credentials = credentials;
         }
 
-        const response = await fetch(url, options);
+        const response = await fetch(domain, options);
 
         if (response.ok) {
             return response.json();
@@ -294,6 +295,7 @@ export default class Client {
     }
 
     doPost = async (url, body, headers = {}) => {
+        let domain = window.location.origin + '/'+ url;
         headers.Accept = 'application/json';
         headers['Content-Type'] = 'application/json';
         let options = {
@@ -306,7 +308,7 @@ export default class Client {
             options = Client4.getOptions(options);
         }
 
-        const response = await fetch(url, options);
+        const response = await fetch(domain, options);
 
         if (response.ok) {
             return response.json();
