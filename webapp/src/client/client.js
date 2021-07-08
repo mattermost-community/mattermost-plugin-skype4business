@@ -5,6 +5,8 @@ import AuthenticationContext from 'adal-angular';
 import {isDesktopApp} from '../utils/user_utils';
 import {Periods} from '../constants';
 import {id as pluginID} from '../manifest';
+import { getPluginServerRoute } from 'selectors';
+
 
 // workaround for the "Token renewal operation failed due to timeout" issue
 // https://github.com/AzureAD/azure-activedirectory-library-for-js/issues/391#issuecomment-384784134
@@ -263,62 +265,79 @@ export default class Client {
         };
     };
 
-    doGet = async (url, headers = {}, credentials) => {
-        headers.Accept = 'application/json';
-        let options = {
-            method: 'get',
-            headers,
+    
+    doGet = (url, headers = {}, credentials) => {
+
+        return async (dispatch, getState) => {
+            const baseUrl = getPluginServerRoute(getState()) + "/"+ url;
+            headers.Accept = 'application/json';
+            let options = {
+                method: 'get',
+                headers,
+            };
+
+            if (url.includes('plugins/' + pluginID)) {
+                options = Client4.getOptions(options);
+            }
+
+            if (credentials) {
+                options.credentials = credentials;
+            }
+
+            const response = await fetch(baseUrl, options);
+
+            if (response.ok) {
+                return response.json();
+            }
+
+            const text = await response.text();
+
+            throw new ClientError(Client4.url, {
+                message: text || '',
+                status_code: response.status,
+                url,
+            });
+
+            //return true;
         };
 
-        if (url.includes('plugins/' + pluginID)) {
-            options = Client4.getOptions(options);
-        }
 
-        if (credentials) {
-            options.credentials = credentials;
-        }
 
-        const response = await fetch(url, options);
-
-        if (response.ok) {
-            return response.json();
-        }
-
-        const text = await response.text();
-
-        throw new ClientError(Client4.url, {
-            message: text || '',
-            status_code: response.status,
-            url,
-        });
+      
     }
 
-    doPost = async (url, body, headers = {}) => {
-        headers.Accept = 'application/json';
-        headers['Content-Type'] = 'application/json';
-        let options = {
-            method: 'post',
-            body: JSON.stringify(body),
-            headers,
+    doPost =  (url, body, headers = {}) => {
+         return async (dispatch, getState) => {
+             const baseUrl = getPluginServerRoute(getState()) + "/" + url;
+             headers.Accept = 'application/json';
+             headers['Content-Type'] = 'application/json';
+             let options = {
+                 method: 'post',
+                 body: JSON.stringify(body),
+                 headers,
+             };
+
+             if (url.includes('plugins/' + pluginID)) {
+                 options = Client4.getOptions(options);
+             }
+
+             const response = await fetch(baseUrl, options);
+
+             if (response.ok) {
+                 return response.json();
+             }
+
+             const text = await response.text();
+
+             throw new ClientError(Client4.url, {
+                 message: text || '',
+                 status_code: response.status,
+                 url,
+             });
+
+            //return true;
         };
-
-        if (url.includes('plugins/' + pluginID)) {
-            options = Client4.getOptions(options);
-        }
-
-        const response = await fetch(url, options);
-
-        if (response.ok) {
-            return response.json();
-        }
-
-        const text = await response.text();
-
-        throw new ClientError(Client4.url, {
-            message: text || '',
-            status_code: response.status,
-            url,
-        });
+      
     };
 
     generateUuid4 = () => {
