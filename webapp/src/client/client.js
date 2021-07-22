@@ -7,7 +7,6 @@ import {Periods} from '../constants';
 import {id as pluginID} from '../manifest';
 import {getPluginServerRoute} from 'selectors';
 
-
 // workaround for the "Token renewal operation failed due to timeout" issue
 // https://github.com/AzureAD/azure-activedirectory-library-for-js/issues/391#issuecomment-384784134
 // eslint-disable-next-line no-underscore-dangle
