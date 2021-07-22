@@ -5,7 +5,7 @@ import AuthenticationContext from 'adal-angular';
 import {isDesktopApp} from '../utils/user_utils';
 import {Periods} from '../constants';
 import {id as pluginID} from '../manifest';
-import { getPluginServerRoute } from 'selectors';
+import {getPluginServerRoute} from 'selectors';
 
 
 // workaround for the "Token renewal operation failed due to timeout" issue
@@ -25,9 +25,8 @@ AuthenticationContext.prototype._addAdalFrame = function _addAdalFrame(iframeId)
         }
     };
 
-    if (!adalFrame) {
-        if (document.createElement && document.documentElement &&
-            (window.opera || window.navigator.userAgent.indexOf('MSIE 5.0') === -1)) {
+    if (! adalFrame) {
+        if (document.createElement && document.documentElement && (window.opera || window.navigator.userAgent.indexOf('MSIE 5.0') === -1)) {
             const ifr = document.createElement('iframe');
             ifr.setAttribute('id', iframeId);
             ifr.setAttribute('aria-hidden', 'true');
@@ -43,10 +42,7 @@ AuthenticationContext.prototype._addAdalFrame = function _addAdalFrame(iframeId)
 
             adalFrame = document.getElementsByTagName('body')[0].appendChild(ifr);
         } else if (document.body && document.body.insertAdjacentHTML) {
-            document.body.insertAdjacentHTML(
-                'beforeEnd',
-                `<iframe name="${iframeId}" id="${iframeId}" style="display:none"></iframe>`,
-            );
+            document.body.insertAdjacentHTML('beforeEnd', `<iframe name="${iframeId}" id="${iframeId}" style="display:none"></iframe>`,);
         }
         if (window.frames && window.frames[iframeId]) {
             adalFrame = window.frames[iframeId];
@@ -65,8 +61,7 @@ AuthenticationContext.prototype._loginPopup = function _loginPopup(urlNavigate, 
     let popupWindow;
     if (this.config.isDesktopApp) {
         popupWindow = window.open(targetUrl, 'login', 'width=' + this.CONSTANTS.POPUP_WIDTH + ', height=' + this.CONSTANTS.POPUP_HEIGHT);
-    } else {
-        // eslint-disable-next-line no-underscore-dangle
+    } else { // eslint-disable-next-line no-underscore-dangle
         popupWindow = this._openPopup(targetUrl, 'login', this.CONSTANTS.POPUP_WIDTH, this.CONSTANTS.POPUP_HEIGHT);
     }
     const loginCallback = callback || this.callback;
@@ -80,14 +75,12 @@ AuthenticationContext.prototype._loginPopup = function _loginPopup(urlNavigate, 
     }
 
     const pollTimer = setInterval(() => {
-        if (!this.config.isDesktopApp) {
-            // eslint-disable-next-line no-undefined
-            if (!popupWindow || popupWindow.closed || popupWindow.closed === undefined) {
+        if (!this.config.isDesktopApp) { // eslint-disable-next-line no-undefined
+            if (! popupWindow || popupWindow.closed || popupWindow.closed === undefined) {
                 const error = 'Popup Window closed';
                 const errorDesc = 'Popup Window closed by UI action/ Popup Window handle destroyed due to cross zone navigation in IE/Edge';
 
-                if (this.isAngular) {
-                    // eslint-disable-next-line no-underscore-dangle
+                if (this.isAngular) { // eslint-disable-next-line no-underscore-dangle
                     this._broadcast('adal:popUpClosed', errorDesc + this.CONSTANTS.RESOURCE_DELIMETER + error);
                 }
 
@@ -99,8 +92,7 @@ AuthenticationContext.prototype._loginPopup = function _loginPopup(urlNavigate, 
         }
 
         const {token, state} = this.config.getAuthenticationResult();
-        if (token) {
-            // eslint-disable-next-line no-underscore-dangle
+        if (token) { // eslint-disable-next-line no-underscore-dangle
             const decodedToken = this._extractIdToken(token);
 
             window.localStorage.setItem(this.CONSTANTS.STORAGE.IDTOKEN, token);
@@ -169,7 +161,7 @@ export default class Client {
     doCreateMeetingInServerVersion = async (channelId, personal) => {
         const body = {
             channel_id: channelId,
-            personal,
+            personal
         };
         const response = await this.doPost(this.createMeetingInServerVersionUrl, body);
 
@@ -187,7 +179,7 @@ export default class Client {
             isDesktopApp: isDesktopApp(),
             redirectUri: window.location.origin + this.redirectUrl,
             popupRedirectUrl: this.authUrl + '?mattermost_user_id=' + currentUserId + '+&navigateTo=',
-            getAuthenticationResult,
+            getAuthenticationResult
         });
         await this.assureUserIsSignedIn();
         const applicationsResourceHref = await this.getApplicationsHref(this.autodiscoverServiceUrl);
@@ -206,7 +198,7 @@ export default class Client {
             personal,
             topic,
             meeting_id: meetingId,
-            metting_url: meetingUrl,
+            metting_url: meetingUrl
         });
     };
 
@@ -217,7 +209,9 @@ export default class Client {
         const userResourceHref = autodiscoverResponse._links.user.href;
         const userResourceName = userResourceHref.substring(0, userResourceHref.indexOf('/Autodiscover'));
         const accessTokenToUserResource = await this.getAccessTokenForResource(userResourceName);
-        const userResourceResponse = await this.doGet(userResourceHref, {Authorization: 'Bearer ' + accessTokenToUserResource}, 'omit');
+        const userResourceResponse = await this.doGet(userResourceHref, {
+            Authorization: 'Bearer ' + accessTokenToUserResource
+        }, 'omit');
 
         // eslint-disable-next-line no-underscore-dangle
         const links = userResourceResponse._links;
@@ -239,9 +233,11 @@ export default class Client {
         const data = {
             UserAgent: 'mm-skype4b-plugin',
             EndpointId: endpointId,
-            Culture: 'en-US',
+            Culture: 'en-US'
         };
-        const response = await this.doPost(oauthApplicationHref, data, {Authorization: authorizationValue}, 'omit');
+        const response = await this.doPost(oauthApplicationHref, data, {
+            Authorization: authorizationValue
+        }, 'omit');
 
         if (response.endpointId !== endpointId) {
             throw new Error('Endpoints don\'t match!');
@@ -254,26 +250,25 @@ export default class Client {
     sendMeetingData = async (url, appAccessToken) => {
         const data = {
             subject: 'Meeting created by the Mattermost Skype for Business plugin',
-            automaticLeaderAssignment: 'SameEnterprise',
+            automaticLeaderAssignment: 'SameEnterprise'
         };
 
-        const response = await this.doPost(url, data, {Authorization: 'Bearer ' + appAccessToken});
+        const response = await this.doPost(url, data, {
+            Authorization: 'Bearer ' + appAccessToken
+        });
 
-        return {
-            meetingId: response.onlineMeetingId,
-            meetingUrl: response.joinUrl,
-        };
+        return {meetingId: response.onlineMeetingId, meetingUrl: response.joinUrl};
     };
 
-    
+
     doGet = (url, headers = {}, credentials) => {
 
         return async (dispatch, getState) => {
-            const baseUrl = getPluginServerRoute(getState()) + "/"+ url;
+            const baseUrl = getPluginServerRoute(getState()) + "/" + url;
             headers.Accept = 'application/json';
             let options = {
                 method: 'get',
-                headers,
+                headers
             };
 
             if (url.includes('plugins/' + pluginID)) {
@@ -295,55 +290,53 @@ export default class Client {
             throw new ClientError(Client4.url, {
                 message: text || '',
                 status_code: response.status,
-                url,
+                url
             });
 
-            //return true;
+            // return true;
         };
 
 
-
-      
     }
 
-    doPost =  (url, body, headers = {}) => {
-         return async (dispatch, getState) => {
-             const baseUrl = getPluginServerRoute(getState()) + "/" + url;
-             headers.Accept = 'application/json';
-             headers['Content-Type'] = 'application/json';
-             let options = {
-                 method: 'post',
-                 body: JSON.stringify(body),
-                 headers,
-             };
+    doPost = (url, body, headers = {}) => {
+        return async (dispatch, getState) => {
+            const baseUrl = getPluginServerRoute(getState()) + "/" + url;
+            headers.Accept = 'application/json';
+            headers['Content-Type'] = 'application/json';
+            let options = {
+                method: 'post',
+                body: JSON.stringify(body),
+                headers
+            };
 
-             if (url.includes('plugins/' + pluginID)) {
-                 options = Client4.getOptions(options);
-             }
+            if (url.includes('plugins/' + pluginID)) {
+                options = Client4.getOptions(options);
+            }
 
-             const response = await fetch(baseUrl, options);
+            const response = await fetch(baseUrl, options);
 
-             if (response.ok) {
-                 return response.json();
-             }
+            if (response.ok) {
+                return response.json();
+            }
 
-             const text = await response.text();
+            const text = await response.text();
 
-             throw new ClientError(Client4.url, {
-                 message: text || '',
-                 status_code: response.status,
-                 url,
-             });
+            throw new ClientError(Client4.url, {
+                message: text || '',
+                status_code: response.status,
+                url
+            });
 
-            //return true;
+            // return true;
         };
-      
+
     };
 
     generateUuid4 = () => {
-        return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, (c) => {
-            // eslint-disable-next-line
-            let r = Math.random() * 16 | 0, v = c === 'x' ? r : (r & 0x3 | 0x8);
+        return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, (c) => { // eslint-disable-next-line
+            let r = Math.random() * 16 | 0,
+                v = c === 'x' ? r : (r & 0x3 | 0x8);
             return v.toString(16);
         });
     };
