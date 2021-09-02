@@ -133,7 +133,10 @@ func TestPlugin(t *testing.T) {
 			api.On("PublishWebSocketEvent", "authenticated", mock.Anything, mock.Anything).Return()
 			api.On("LogWarn", mock.AnythingOfTypeArgument("string"), mock.AnythingOfTypeArgument("string")).Return()
 
-			p := Plugin{}
+			p := Plugin{
+				client: &ClientMock{},
+				logger: &LoggerMock{},
+			}
 			p.setConfiguration(&configuration{
 				ClientID:    "123123123",
 				ProductType: productTypeOnline,
@@ -272,7 +275,10 @@ func makeMocks(mmChannelID string, mmUser model.User, splitDomain bool) Mocks {
 		tokenToBeUsed,
 	).Return(&newMeetingResponseToReturn, nil).Times(1)
 
-	p := Plugin{client: &clientMock}
+	p := Plugin{
+		client: &clientMock,
+		logger: &LoggerMock{},
+	}
 	p.SetAPI(&api)
 	p.setConfiguration(&pluginConfigToReturn)
 
@@ -426,6 +432,10 @@ func makePost(mmUser model.User, channelID string, createdMeeting NewMeetingResp
 type ClientMock struct {
 	mock.Mock
 }
+
+func (c *ClientMock) setLogger(logger ILogger) {}
+
+func (c *ClientMock) setShouldLogRequests(shouldLogRequests bool) {}
 
 func (c *ClientMock) authenticate(url string, body url.Values) (*AuthResponse, error) {
 	ret := c.Called(url, body)

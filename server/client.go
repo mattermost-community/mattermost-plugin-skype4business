@@ -7,6 +7,7 @@ import (
 	"io"
 	"io/ioutil"
 	"net/http"
+	"net/http/httputil"
 	"net/url"
 	"strings"
 
@@ -16,6 +17,7 @@ import (
 // Client is a new HTTP Client to talk to the Skype server
 type Client struct {
 	httpClient *http.Client
+	log        ILogger
 }
 
 // NewClient returns a new Client
@@ -29,7 +31,13 @@ func NewClient() *Client {
 	}
 }
 
+func (c *Client) setLogger(logger ILogger) {
+	c.log = logger
+}
+
 func (c *Client) authenticate(url string, body url.Values) (*AuthResponse, error) {
+	c.log.LogDebug("Request in authenticate", "url", url, "body", body)
+
 	resp, err := c.httpClient.PostForm(url, body)
 	if err != nil {
 		return nil, err
@@ -50,6 +58,9 @@ func (c *Client) createNewApplication(url string, body interface{}, token string
 	if err != nil {
 		return nil, err
 	}
+
+	c.logRequest("createNewApplication", req, true)
+
 	var newApplicationResponse NewApplicationResponse
 	_, err = c.do(req, &newApplicationResponse)
 	return &newApplicationResponse, err
@@ -60,6 +71,9 @@ func (c *Client) createNewMeeting(url string, body interface{}, token string) (*
 	if err != nil {
 		return nil, err
 	}
+
+	c.logRequest("createNewMeeting", req, true)
+
 	var newMeetingResponse NewMeetingResponse
 	_, err = c.do(req, &newMeetingResponse)
 	return &newMeetingResponse, err
@@ -70,6 +84,9 @@ func (c *Client) performDiscovery(url string) (*DiscoveryResponse, error) {
 	if err != nil {
 		return nil, err
 	}
+
+	c.logRequest("performDiscovery", req, false)
+
 	var discoveryResponse DiscoveryResponse
 	_, err = c.do(req, &discoveryResponse)
 	return &discoveryResponse, err
@@ -80,6 +97,9 @@ func (c *Client) readUserResource(url string, token string) (*UserResourceRespon
 	if err != nil {
 		return nil, err
 	}
+
+	c.logRequest("readUserResource", req, false)
+
 	var userResourceResponse UserResourceResponse
 	_, err = c.do(req, &userResourceResponse)
 	return &userResourceResponse, err
@@ -115,6 +135,8 @@ func (c *Client) performRequestAndGetAuthHeader(url string) (*string, error) {
 	if err != nil {
 		return nil, err
 	}
+
+	c.logRequest("performRequestAndGetAuthHeader", req, false)
 
 	resp, err := c.httpClient.Do(req)
 	if err != nil {
@@ -168,4 +190,14 @@ func (c *Client) validateResponse(resp *http.Response) error {
 	}
 
 	return nil
+}
+
+func (c *Client) logRequest(methodName string, r *http.Request, hasBody bool) {
+	requestDump, err := httputil.DumpRequestOut(r, hasBody)
+	if err != nil {
+		c.log.LogWarn("Failed to generate HTTP request dump", "error", err)
+		return
+	}
+
+	c.log.LogDebug("Sending request in "+methodName, "request", string(requestDump))
 }

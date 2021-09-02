@@ -41,6 +41,13 @@ const (
 	RootURLKey = "root_url"
 )
 
+// ILogger is used for logging in the plugin
+type ILogger interface {
+	LogWarn(msg string, keyValuePairs ...interface{})
+	//LogInfo(msg string, keyValuePairs ...interface{})
+	LogDebug(msg string, keyValuePairs ...interface{})
+}
+
 // IClient is an interface of a struct that performs requests to UCWA.
 type IClient interface {
 	authenticate(url string, body url.Values) (*AuthResponse, error)
@@ -63,6 +70,7 @@ type Plugin struct {
 	configuration *configuration
 
 	client IClient
+	logger ILogger
 }
 
 // OnActivate is a method that is called once the plugin is activated.
@@ -72,6 +80,9 @@ func (p *Plugin) OnActivate() error {
 	if err := config.IsValid(); err != nil {
 		return err
 	}
+
+	p.logger = p.API
+	//p.client.setLogger(p.API)
 
 	return nil
 }
@@ -106,7 +117,7 @@ func (p *Plugin) ServeHTTP(c *plugin.Context, w http.ResponseWriter, r *http.Req
 	}
 
 	if err != nil {
-		p.API.LogWarn(err.Error())
+		p.logger.LogWarn(err.Error())
 		http.Error(w, err.Error(), httpStatusCode)
 	}
 }
@@ -169,7 +180,7 @@ func (p *Plugin) completeAuthorizeInADD(w http.ResponseWriter, r *http.Request) 
 
 	err = p.API.KVDelete(state)
 	if err != nil {
-		p.API.LogWarn("An error occurred while completing authorization in ADD. Cannot delete stored state",
+		p.logger.LogWarn("An error occured while completing authorization in ADD. Cannot delete stored state",
 			"err", err)
 	}
 
@@ -487,7 +498,7 @@ func (p *Plugin) getApplicationState(discoveryURL string) (*ApplicationState, *A
 	if applicationsURL != "" {
 		applicationsResourceName := p.extractResourceNameFromApplicationsURL(applicationsURL)
 		if applicationsResourceName != resourceName {
-			p.API.LogWarn("Resource from applications URL is not the same as resource name from user URL")
+			p.logger.LogWarn("Resource from applications URL is not the same as resource name from user URL")
 
 			authHeader, err := p.client.performRequestAndGetAuthHeader(applicationsURL)
 			if err != nil {
@@ -571,7 +582,7 @@ func (p *Plugin) determineRootURL(domain string) (*string, *APIError) {
 			return &o.url, nil
 		}
 
-		p.API.LogWarn("An error occurred while performing autodiscovery with "+o.name+" root URL",
+		p.logger.LogWarn("An error occued while performing autodiscovery with "+o.name+" root URL",
 			"err", err)
 	}
 
