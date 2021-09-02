@@ -43,8 +43,9 @@ const (
 
 // ILogger is used for logging in the plugin
 type ILogger interface {
+	LogError(msg string, keyValuePairs ...interface{})
 	LogWarn(msg string, keyValuePairs ...interface{})
-	//LogInfo(msg string, keyValuePairs ...interface{})
+	LogInfo(msg string, keyValuePairs ...interface{})
 	LogDebug(msg string, keyValuePairs ...interface{})
 }
 
@@ -56,6 +57,8 @@ type IClient interface {
 	performDiscovery(url string) (*DiscoveryResponse, error)
 	performRequestAndGetAuthHeader(url string) (*string, error)
 	readUserResource(url string, token string) (*UserResourceResponse, error)
+
+	setLogger(logger ILogger)
 }
 
 // Plugin represents the plugin api.
@@ -82,7 +85,7 @@ func (p *Plugin) OnActivate() error {
 	}
 
 	p.logger = p.API
-	//p.client.setLogger(p.API)
+	p.client.setLogger(p.API)
 
 	return nil
 }
@@ -180,7 +183,7 @@ func (p *Plugin) completeAuthorizeInADD(w http.ResponseWriter, r *http.Request) 
 
 	err = p.API.KVDelete(state)
 	if err != nil {
-		p.logger.LogWarn("An error occured while completing authorization in ADD. Cannot delete stored state",
+		p.logger.LogWarn("An error occurred while completing authorization in ADD. Cannot delete stored state",
 			"err", err)
 	}
 
