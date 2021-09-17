@@ -24,7 +24,7 @@ AuthenticationContext.prototype._addAdalFrame = function _addAdalFrame(iframeId)
         }
     };
 
-    if (! adalFrame) {
+    if (!adalFrame) {
         if (document.createElement && document.documentElement &&
             (window.opera || window.navigator.userAgent.indexOf('MSIE 5.0') === -1)) {
             const ifr = document.createElement('iframe');
@@ -64,7 +64,8 @@ AuthenticationContext.prototype._loginPopup = function _loginPopup(urlNavigate, 
     let popupWindow;
     if (this.config.isDesktopApp) {
         popupWindow = window.open(targetUrl, 'login', 'width=' + this.CONSTANTS.POPUP_WIDTH + ', height=' + this.CONSTANTS.POPUP_HEIGHT);
-    } else { // eslint-disable-next-line no-underscore-dangle
+    } else { 
+        // eslint-disable-next-line no-underscore-dangle
         popupWindow = this._openPopup(targetUrl, 'login', this.CONSTANTS.POPUP_WIDTH, this.CONSTANTS.POPUP_HEIGHT);
     }
     const loginCallback = callback || this.callback;
@@ -78,13 +79,13 @@ AuthenticationContext.prototype._loginPopup = function _loginPopup(urlNavigate, 
     }
 
     const pollTimer = setInterval(() => {
-        if (!this.config.isDesktopApp) { 
+        if (!this.config.isDesktopApp) {
             // eslint-disable-next-line no-undefined
             if (!popupWindow || popupWindow.closed || popupWindow.closed === undefined) {
                 const error = 'Popup Window closed';
                 const errorDesc = 'Popup Window closed by UI action/ Popup Window handle destroyed due to cross zone navigation in IE/Edge';
 
-                if (this.isAngular) { 
+                if (this.isAngular) {
                     // eslint-disable-next-line no-underscore-dangle
                     this._broadcast('adal:popUpClosed', errorDesc + this.CONSTANTS.RESOURCE_DELIMETER + error);
                 }
@@ -97,7 +98,7 @@ AuthenticationContext.prototype._loginPopup = function _loginPopup(urlNavigate, 
         }
 
         const {token, state} = this.config.getAuthenticationResult();
-        if (token) { 
+        if (token) {
             // eslint-disable-next-line no-underscore-dangle
             const decodedToken = this._extractIdToken(token);
 
@@ -252,7 +253,7 @@ export default class Client {
     sendMeetingData = async (url, appAccessToken) => {
         const data = {
             subject: 'Meeting created by the Mattermost Skype for Business plugin',
-            automaticLeaderAssignment: 'SameEnterprise'
+            automaticLeaderAssignment: 'SameEnterprise',
         };
 
         const response = await this.doPost(url, data, {Authorization: 'Bearer ' + appAccessToken});
