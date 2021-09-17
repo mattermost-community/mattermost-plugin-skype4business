@@ -64,7 +64,7 @@ AuthenticationContext.prototype._loginPopup = function _loginPopup(urlNavigate, 
     let popupWindow;
     if (this.config.isDesktopApp) {
         popupWindow = window.open(targetUrl, 'login', 'width=' + this.CONSTANTS.POPUP_WIDTH + ', height=' + this.CONSTANTS.POPUP_HEIGHT);
-    } else { 
+    } else {
         // eslint-disable-next-line no-underscore-dangle
         popupWindow = this._openPopup(targetUrl, 'login', this.CONSTANTS.POPUP_WIDTH, this.CONSTANTS.POPUP_HEIGHT);
     }
@@ -270,7 +270,7 @@ export default class Client {
             headers.Accept = 'application/json';
             let options = {
                 method: 'get',
-                headers
+                headers,
             };
 
             if (url.includes('plugins/' + pluginID)) {
@@ -292,9 +292,8 @@ export default class Client {
             throw new ClientError(Client4.url, {
                 message: text || '',
                 status_code: response.status,
-                url
+                url,
             });
-
         };
     };
 
@@ -306,7 +305,7 @@ export default class Client {
             let options = {
                 method: 'post',
                 body: JSON.stringify(body),
-                headers
+                headers,
             };
 
             if (url.includes('plugins/' + pluginID)) {
@@ -324,7 +323,7 @@ export default class Client {
             throw new ClientError(Client4.url, {
                 message: text || '',
                 status_code: response.status,
-                url
+                url,
             });
 
             // return true;
@@ -332,7 +331,7 @@ export default class Client {
     };
 
     generateUuid4 = () => {
-        return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, (c) => { 
+        return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, (c) => {
             // eslint-disable-next-line
             let r = (Math.random() * 16) | 0,v = c === 'x' ? r : (r & 0x3) | 0x8;
             return v.toString(16);
