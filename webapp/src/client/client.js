@@ -6,6 +6,7 @@ import {isDesktopApp} from '../utils/user_utils';
 import {Periods} from '../constants';
 import {id as pluginID} from '../manifest';
 import {getPluginServerRoute} from '../selectors';
+
 // workaround for the "Token renewal operation failed due to timeout" issue
 // https://github.com/AzureAD/azure-activedirectory-library-for-js/issues/391#issuecomment-384784134
 // eslint-disable-next-line no-underscore-dangle
@@ -265,7 +266,7 @@ export default class Client {
 
     doGet = (appendUrl, headers = {}, credentials) => {
         return async (getState) => {
-            let url = getPluginServerRoute(getState()) + '/' + appendUrl;
+            const url = getPluginServerRoute(getState()) + '/' + appendUrl;
             headers.Accept = 'application/json';
             let options = {
                 method: 'get',
@@ -298,7 +299,7 @@ export default class Client {
 
     doPost = (appendUrl, body, headers = {}) => {
         return async (getState) => {
-            let url = getPluginServerRoute(getState()) + '/' + appendUrl;
+            const url = getPluginServerRoute(getState()) + '/' + appendUrl;
             headers.Accept = 'application/json';
             headers['Content-Type'] = 'application/json';
             let options = {
