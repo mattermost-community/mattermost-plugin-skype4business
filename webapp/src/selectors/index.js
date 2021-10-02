@@ -4,8 +4,6 @@ import {id as pluginId} from '../manifest';
 
 const getPluginState = (state) => state[`plugins-${pluginId}`] || {};
 
-const getAuthenticationResult = (state) => getPluginState(state).authenticationResult;
-
 export const getPluginServerRoute = (state) => {
     const config = getConfig(state);
 
@@ -20,5 +18,4 @@ export const getPluginServerRoute = (state) => {
 
     return basePath;
 };
-
 export const getAuthenticationResult = (state) => getPluginState(state).authenticationResult;

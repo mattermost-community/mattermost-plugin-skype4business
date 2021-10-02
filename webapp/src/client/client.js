@@ -126,7 +126,7 @@ AuthenticationContext.prototype._loginPopup = function _loginPopup(urlNavigate, 
 
 export default class Client {
     constructor() {
-        this.autodiscoverServiceUrl = `https://webdir.online.lync.com/autodiscover/autodiscoverservice.svc/root`;
+        this.autodiscoverServiceUrl = 'https://webdir.online.lync.com/autodiscover/autodiscoverservice.svc/root';
         this.registerMeetingFromOnlineVersionUrl = `/plugins/${pluginID}/api/v1/register_meeting_from_online_version`;
         this.clientIdUrl = `/plugins/${pluginID}/api/v1/client_id`;
         this.createMeetingInServerVersionUrl = `/plugins/${pluginID}/api/v1/create_meeting_in_server_version`;
@@ -159,8 +159,8 @@ export default class Client {
         }
     };
 
-    getClientId = () => {
-        const response = dispatch(this.doGet(this.clientIdUrl));
+    getClientId = async () => {
+        const response = await this.doGet(this.clientIdUrl);
 
         return response.client_id;
     };
@@ -210,13 +210,13 @@ export default class Client {
     };
 
     getApplicationsHref = async (autodiscoverServiceUrl) => {
-        const autodiscoverResponse =  dispatch(this.doGet(autodiscoverServiceUrl, {}, 'omit'));
+        const autodiscoverResponse = await this.doGet(autodiscoverServiceUrl, {}, 'omit');
 
         // eslint-disable-next-line no-underscore-dangle
         const userResourceHref = autodiscoverResponse._links.user.href;
         const userResourceName = userResourceHref.substring(0, userResourceHref.indexOf('/Autodiscover'));
         const accessTokenToUserResource = await this.getAccessTokenForResource(userResourceName);
-        const userResourceResponse =  dispatch(this.doGet(userResourceHref, {Authorization: 'Bearer ' + accessTokenToUserResource}, 'omit'));
+        const userResourceResponse =  await this.doGet(userResourceHref, {Authorization: 'Bearer ' + accessTokenToUserResource}, 'omit');
 
         // eslint-disable-next-line no-underscore-dangle
         const links = userResourceResponse._links;
@@ -266,7 +266,7 @@ export default class Client {
 
     doGet = (url, headers = {}, credentials) => {
         return async (dispatch, getState) => {
-            const url = getPluginServerRoute(getState()) + '/' + url;
+            url = getPluginServerRoute(getState()) + '/' + url;
             headers.Accept = 'application/json';
             let options = {
                 method: 'get',
@@ -281,7 +281,7 @@ export default class Client {
                 options.credentials = credentials;
             }
 
-            const response = await fetch(baseUrl, options);
+            const response = await fetch(url, options);
 
             if (response.ok) {
                 return response.json();
@@ -299,7 +299,7 @@ export default class Client {
 
     doPost = (url, body, headers = {}) => {
         return async (dispatch, getState) => {
-            const baseUrl = getPluginServerRoute(getState()) + '/' + url;
+            url = getPluginServerRoute(getState()) + '/' + url;
             headers.Accept = 'application/json';
             headers['Content-Type'] = 'application/json';
             let options = {
@@ -312,7 +312,7 @@ export default class Client {
                 options = Client4.getOptions(options);
             }
 
-            const response = await fetch(baseUrl, options);
+            const response = await fetch(url, options);
 
             if (response.ok) {
                 return response.json();
