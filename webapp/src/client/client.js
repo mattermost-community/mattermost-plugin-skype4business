@@ -6,7 +6,6 @@ import {isDesktopApp} from '../utils/user_utils';
 import {Periods} from '../constants';
 import {id as pluginID} from '../manifest';
 import {getPluginServerRoute} from '../selectors';
-
 // workaround for the "Token renewal operation failed due to timeout" issue
 // https://github.com/AzureAD/azure-activedirectory-library-for-js/issues/391#issuecomment-384784134
 // eslint-disable-next-line no-underscore-dangle
@@ -216,7 +215,7 @@ export default class Client {
         const userResourceHref = autodiscoverResponse._links.user.href;
         const userResourceName = userResourceHref.substring(0, userResourceHref.indexOf('/Autodiscover'));
         const accessTokenToUserResource = await this.getAccessTokenForResource(userResourceName);
-        const userResourceResponse =  await this.doGet(userResourceHref, {Authorization: 'Bearer ' + accessTokenToUserResource}, 'omit');
+        const userResourceResponse = await this.doGet(userResourceHref, {Authorization: 'Bearer ' + accessTokenToUserResource}, 'omit');
 
         // eslint-disable-next-line no-underscore-dangle
         const links = userResourceResponse._links;
@@ -264,9 +263,9 @@ export default class Client {
         };
     };
 
-    doGet = (url, headers = {}, credentials) => {
-        return async (dispatch, getState) => {
-            url = getPluginServerRoute(getState()) + '/' + url;
+    doGet = (appendUrl, headers = {}, credentials) => {
+        return async (getState) => {
+            let url = getPluginServerRoute(getState()) + '/' + appendUrl;
             headers.Accept = 'application/json';
             let options = {
                 method: 'get',
@@ -297,9 +296,9 @@ export default class Client {
         };
     };
 
-    doPost = (url, body, headers = {}) => {
-        return async (dispatch, getState) => {
-            url = getPluginServerRoute(getState()) + '/' + url;
+    doPost = (appendUrl, body, headers = {}) => {
+        return async (getState) => {
+            let url = getPluginServerRoute(getState()) + '/' + appendUrl;
             headers.Accept = 'application/json';
             headers['Content-Type'] = 'application/json';
             let options = {
@@ -380,8 +379,8 @@ export default class Client {
         }
     };
 
-    isServerVersion = () => {
-        const response = dispatch(this.doGet(this.productTypeUrl));
+    isServerVersion = async () => {
+        const response = await this.doGet(this.productTypeUrl);
 
         return response.product_type === 'server';
     };
