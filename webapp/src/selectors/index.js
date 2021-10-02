@@ -21,4 +21,4 @@ export const getPluginServerRoute = (state) => {
     return basePath;
 };
 
-export default {getAuthenticationResult};
+export const getAuthenticationResult = (state) => getPluginState(state).authenticationResult;

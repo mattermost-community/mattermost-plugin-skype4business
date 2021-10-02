@@ -5,7 +5,7 @@ import AuthenticationContext from 'adal-angular';
 import {isDesktopApp} from '../utils/user_utils';
 import {Periods} from '../constants';
 import {id as pluginID} from '../manifest';
-import {getPluginServerRoute} from 'selectors';
+import {getPluginServerRoute} from '../selectors';
 
 // workaround for the "Token renewal operation failed due to timeout" issue
 // https://github.com/AzureAD/azure-activedirectory-library-for-js/issues/391#issuecomment-384784134
@@ -126,13 +126,13 @@ AuthenticationContext.prototype._loginPopup = function _loginPopup(urlNavigate, 
 
 export default class Client {
     constructor() {
-        this.autodiscoverServiceUrl = 'https://webdir.online.lync.com/autodiscover/autodiscoverservice.svc/root';
-        this.registerMeetingFromOnlineVersionUrl = '/plugins/skype4business/api/v1/register_meeting_from_online_version';
-        this.clientIdUrl = '/plugins/skype4business/api/v1/client_id';
-        this.createMeetingInServerVersionUrl = '/plugins/skype4business/api/v1/create_meeting_in_server_version';
-        this.productTypeUrl = '/plugins/skype4business/api/v1/product_type';
-        this.authUrl = '/plugins/skype4business/api/v1/auth';
-        this.redirectUrl = '/plugins/skype4business/api/v1/auth_redirect';
+        this.autodiscoverServiceUrl = `https://webdir.online.lync.com/autodiscover/autodiscoverservice.svc/root`;
+        this.registerMeetingFromOnlineVersionUrl = `/plugins/${pluginID}/api/v1/register_meeting_from_online_version`;
+        this.clientIdUrl = `/plugins/${pluginID}/api/v1/client_id`;
+        this.createMeetingInServerVersionUrl = `/plugins/${pluginID}/api/v1/create_meeting_in_server_version`;
+        this.productTypeUrl = `/plugins/${pluginID}/api/v1/product_type`;
+        this.authUrl = `/plugins/${pluginID}/api/v1/auth`;
+        this.redirectUrl = `/plugins/${pluginID}/api/v1/auth_redirect`;
     }
 
     createMeeting = async (channelId, currentUserId, getAuthenticationResult, personal = true, topic = '') => {
@@ -159,8 +159,8 @@ export default class Client {
         }
     };
 
-    getClientId = async () => {
-        const response = await this.doGet(this.clientIdUrl);
+    getClientId = () => {
+        const response = dispatch(this.doGet(this.clientIdUrl));
 
         return response.client_id;
     };
@@ -210,13 +210,13 @@ export default class Client {
     };
 
     getApplicationsHref = async (autodiscoverServiceUrl) => {
-        const autodiscoverResponse = await this.doGet(autodiscoverServiceUrl, {}, 'omit');
+        const autodiscoverResponse =  dispatch(this.doGet(autodiscoverServiceUrl, {}, 'omit'));
 
         // eslint-disable-next-line no-underscore-dangle
         const userResourceHref = autodiscoverResponse._links.user.href;
         const userResourceName = userResourceHref.substring(0, userResourceHref.indexOf('/Autodiscover'));
         const accessTokenToUserResource = await this.getAccessTokenForResource(userResourceName);
-        const userResourceResponse = await this.doGet(userResourceHref, {Authorization: 'Bearer ' + accessTokenToUserResource}, 'omit');
+        const userResourceResponse =  dispatch(this.doGet(userResourceHref, {Authorization: 'Bearer ' + accessTokenToUserResource}, 'omit'));
 
         // eslint-disable-next-line no-underscore-dangle
         const links = userResourceResponse._links;
@@ -266,7 +266,7 @@ export default class Client {
 
     doGet = (url, headers = {}, credentials) => {
         return async (dispatch, getState) => {
-            const baseUrl = getPluginServerRoute(getState()) + '/' + url;
+            const url = getPluginServerRoute(getState()) + '/' + url;
             headers.Accept = 'application/json';
             let options = {
                 method: 'get',
@@ -325,15 +325,13 @@ export default class Client {
                 status_code: response.status,
                 url,
             });
-
-            // return true;
         };
     };
 
     generateUuid4 = () => {
         return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, (c) => {
             // eslint-disable-next-line
-            let r = (Math.random() * 16) | 0,v = c === 'x' ? r : (r & 0x3) | 0x8;
+            let r = Math.random() * 16 | 0, v = c === 'x' ? r : (r & 0x3 | 0x8);
             return v.toString(16);
         });
     };
@@ -382,8 +380,8 @@ export default class Client {
         }
     };
 
-    isServerVersion = async () => {
-        const response = await this.doGet(this.productTypeUrl);
+    isServerVersion = () => {
+        const response = dispatch(this.doGet(this.productTypeUrl));
 
         return response.product_type === 'server';
     };
