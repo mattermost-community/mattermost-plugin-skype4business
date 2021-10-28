@@ -10,6 +10,8 @@ import (
 	"strconv"
 	"testing"
 
+	"github.com/stretchr/testify/mock"
+
 	"github.com/stretchr/testify/assert"
 )
 
@@ -37,11 +39,21 @@ var (
 	server *httptest.Server
 )
 
+type LoggerMock struct {
+	mock.Mock
+}
+
+func (l *LoggerMock) LogError(msg string, keyValuePairs ...interface{}) {}
+func (l *LoggerMock) LogWarn(msg string, keyValuePairs ...interface{})  {}
+func (l *LoggerMock) LogInfo(msg string, keyValuePairs ...interface{})  {}
+func (l *LoggerMock) LogDebug(msg string, keyValuePairs ...interface{}) {}
+
 func TestClient(t *testing.T) {
 	setupTestServer(t)
 	defer teardown()
 
 	client := NewClient()
+	client.setLogger(&LoggerMock{})
 
 	t.Run("test authenticate", func(t *testing.T) {
 		r, err := client.authenticate(server.URL+URLAuthenticate, url.Values{})
