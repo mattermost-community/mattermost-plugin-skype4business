@@ -78,7 +78,7 @@ endif
 ## Ensures NPM dependencies are installed without having to run this all the time.
 webapp/node_modules: webapp/package.json
 ifneq ($(HAS_WEBAPP),)
-	cd webapp && $(NPM) install
+	cd webapp && $(NPM) install --verbose
 	touch $@
 endif
 
@@ -103,7 +103,7 @@ ifneq ($(wildcard $(ASSETS_DIR)/.),)
 	cp -r $(ASSETS_DIR) dist/$(PLUGIN_ID)/
 endif
 ifneq ($(HAS_PUBLIC),)
-	cp -r public dist/$(PLUGIN_ID)/
+	cp -r public dist/$(PLUGIN_ID)/public/
 endif
 ifneq ($(HAS_SERVER),)
 	mkdir -p dist/$(PLUGIN_ID)/server

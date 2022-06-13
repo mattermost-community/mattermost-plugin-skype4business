@@ -3,6 +3,8 @@
 
 import React from 'react';
 
+import {getConfig} from 'mattermost-redux/selectors/entities/general';
+
 import {id as pluginId} from './manifest';
 
 import Icon from './components/icon.jsx';
@@ -15,13 +17,23 @@ class Plugin {
     // eslint-disable-next-line no-unused-vars
     initialize(registry, store) {
         registry.registerReducer(Reducer);
-        registry.registerChannelHeaderButtonAction(
-            <Icon/>,
-            (channel) => {
-                startMeeting(channel.id)(store.dispatch, store.getState);
-            },
-            'Start Skype for Business Meeting',
-        );
+
+        const helpText = 'Start Skype for Business Meeting';
+        const action = (channel) => {
+            startMeeting(channel.id)(store.dispatch, store.getState);
+        };
+
+        // Channel header icon
+        registry.registerChannelHeaderButtonAction(<Icon/>, action, helpText);
+
+        // App Bar icon
+        if (registry.registerAppBarComponent) {
+            const config = getConfig(store.getState());
+            const siteUrl = (config && config.SiteURL) || '';
+            const iconURL = `${siteUrl}/plugins/${pluginId}/public/app-bar-icon.png`;
+            registry.registerAppBarComponent(iconURL, action, helpText);
+        }
+
         registry.registerPostTypeComponent('custom_s4b', PostTypeS4b);
 
         registry.registerWebSocketEventHandler('custom_' + pluginId + '_authenticated', (event) => {
