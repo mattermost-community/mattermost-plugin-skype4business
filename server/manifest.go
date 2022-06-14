@@ -17,9 +17,9 @@ const manifestStr = `
   "description": "Skype for Business plugin for Mattermost.",
   "homepage_url": "https://github.com/mattermost/mattermost-plugin-skype4business",
   "support_url": "https://github.com/mattermost/mattermost-plugin-skype4business/issues",
-  "release_notes_url": "https://github.com/mattermost/mattermost-plugin-skype4business/releases/tag/v0.2.0",
+  "release_notes_url": "https://github.com/mattermost/mattermost-plugin-skype4business/releases/tag/v0.3.0",
   "icon_path": "assets/profile.svg",
-  "version": "0.2.0",
+  "version": "0.3.0",
   "min_server_version": "5.10.0",
   "server": {
     "executables": {
