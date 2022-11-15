@@ -2,7 +2,6 @@ package main
 
 import (
 	"bytes"
-	"crypto/tls"
 	"encoding/json"
 	"io"
 	"io/ioutil"
@@ -16,18 +15,14 @@ import (
 
 // Client is a new HTTP Client to talk to the Skype server
 type Client struct {
-	httpClient *http.Client
-	log        ILogger
+	*http.Client
+	log ILogger
 }
 
 // NewClient returns a new Client
 func NewClient() *Client {
 	return &Client{
-		httpClient: &http.Client{
-			Transport: &http.Transport{
-				TLSClientConfig: &tls.Config{InsecureSkipVerify: true},
-			},
-		},
+		Client: http.DefaultClient,
 	}
 }
 
@@ -38,7 +33,7 @@ func (c *Client) setLogger(logger ILogger) {
 func (c *Client) authenticate(url string, body url.Values) (*AuthResponse, error) {
 	c.log.LogDebug("Request in authenticate", "url", url, "body", body)
 
-	resp, err := c.httpClient.PostForm(url, body)
+	resp, err := c.PostForm(url, body)
 	if err != nil {
 		return nil, err
 	}
@@ -138,7 +133,7 @@ func (c *Client) performRequestAndGetAuthHeader(url string) (*string, error) {
 
 	c.logRequest("performRequestAndGetAuthHeader", req, false)
 
-	resp, err := c.httpClient.Do(req)
+	resp, err := c.Do(req)
 	if err != nil {
 		return nil, err
 	}
@@ -154,7 +149,7 @@ func (c *Client) performRequestAndGetAuthHeader(url string) (*string, error) {
 }
 
 func (c *Client) do(req *http.Request, v interface{}) (*http.Response, error) {
-	resp, err := c.httpClient.Do(req)
+	resp, err := c.Do(req)
 	if err != nil {
 		return nil, err
 	}
