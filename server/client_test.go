@@ -2,7 +2,7 @@ package main
 
 import (
 	"bytes"
-	"io/ioutil"
+	"io"
 	"math"
 	"net/http"
 	"net/http/httptest"
@@ -178,7 +178,7 @@ func TestClient(t *testing.T) {
 		resp = &http.Response{
 			Status:     strconv.Itoa(http.StatusInternalServerError) + " " + http.StatusText(http.StatusInternalServerError),
 			StatusCode: http.StatusInternalServerError,
-			Body:       ioutil.NopCloser(bytes.NewBufferString("test body")),
+			Body:       io.NopCloser(bytes.NewBufferString("test body")),
 		}
 
 		err = client.validateResponse(resp)
@@ -192,7 +192,7 @@ func TestClient(t *testing.T) {
 		resp = &http.Response{
 			Status:     strconv.Itoa(http.StatusInternalServerError) + " " + http.StatusText(http.StatusInternalServerError),
 			StatusCode: http.StatusInternalServerError,
-			Body:       ioutil.NopCloser(bytes.NewBufferString("")),
+			Body:       io.NopCloser(bytes.NewBufferString("")),
 		}
 
 		err = client.validateResponse(resp)

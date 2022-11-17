@@ -5,7 +5,6 @@ import (
 	"crypto/tls"
 	"encoding/json"
 	"io"
-	"io/ioutil"
 	"net/http"
 	"net/http/httputil"
 	"net/url"
@@ -62,7 +61,7 @@ func (c *Client) createNewApplication(url string, body interface{}, token string
 	c.logRequest("createNewApplication", req, true)
 
 	var newApplicationResponse NewApplicationResponse
-	_, err = c.do(req, &newApplicationResponse)
+	err = c.do(req, &newApplicationResponse)
 	return &newApplicationResponse, err
 }
 
@@ -75,7 +74,7 @@ func (c *Client) createNewMeeting(url string, body interface{}, token string) (*
 	c.logRequest("createNewMeeting", req, true)
 
 	var newMeetingResponse NewMeetingResponse
-	_, err = c.do(req, &newMeetingResponse)
+	err = c.do(req, &newMeetingResponse)
 	return &newMeetingResponse, err
 }
 
@@ -88,7 +87,7 @@ func (c *Client) performDiscovery(url string) (*DiscoveryResponse, error) {
 	c.logRequest("performDiscovery", req, false)
 
 	var discoveryResponse DiscoveryResponse
-	_, err = c.do(req, &discoveryResponse)
+	err = c.do(req, &discoveryResponse)
 	return &discoveryResponse, err
 }
 
@@ -101,7 +100,7 @@ func (c *Client) readUserResource(url string, token string) (*UserResourceRespon
 	c.logRequest("readUserResource", req, false)
 
 	var userResourceResponse UserResourceResponse
-	_, err = c.do(req, &userResourceResponse)
+	err = c.do(req, &userResourceResponse)
 	return &userResourceResponse, err
 }
 
@@ -142,6 +141,7 @@ func (c *Client) performRequestAndGetAuthHeader(url string) (*string, error) {
 	if err != nil {
 		return nil, err
 	}
+	defer resp.Body.Close()
 
 	for k, v := range resp.Header {
 		if strings.ToUpper(k) == "WWW-AUTHENTICATE" {
@@ -153,19 +153,19 @@ func (c *Client) performRequestAndGetAuthHeader(url string) (*string, error) {
 	return nil, errors.New("response doesn't have WWW-AUTHENTICATE header")
 }
 
-func (c *Client) do(req *http.Request, v interface{}) (*http.Response, error) {
+func (c *Client) do(req *http.Request, v interface{}) error {
 	resp, err := c.httpClient.Do(req)
 	if err != nil {
-		return nil, err
+		return err
 	}
 	defer resp.Body.Close()
 
 	if err = c.validateResponse(resp); err != nil {
-		return nil, err
+		return err
 	}
 
 	err = json.NewDecoder(resp.Body).Decode(v)
-	return resp, err
+	return err
 }
 
 func (c *Client) validateResponse(resp *http.Response) error {
@@ -179,7 +179,7 @@ func (c *Client) validateResponse(resp *http.Response) error {
 			msg += "Doesn't have X-Ms-Diagnostics header. "
 		}
 
-		bodyBytes, _ := ioutil.ReadAll(resp.Body)
+		bodyBytes, _ := io.ReadAll(resp.Body)
 		if len(bodyBytes) > 0 {
 			msg += "Response body: " + string(bodyBytes) + ". "
 		} else {
