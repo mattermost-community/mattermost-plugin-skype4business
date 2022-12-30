@@ -124,14 +124,15 @@ AuthenticationContext.prototype._loginPopup = function _loginPopup(urlNavigate, 
 };
 
 export default class Client {
-    constructor() {
+    setServerRoute(url) {
+        this.url = url + `/plugins/${pluginID}/api/v1`;
         this.autodiscoverServiceUrl = 'https://webdir.online.lync.com/autodiscover/autodiscoverservice.svc/root';
-        this.registerMeetingFromOnlineVersionUrl = '/plugins/skype4business/api/v1/register_meeting_from_online_version';
-        this.clientIdUrl = '/plugins/skype4business/api/v1/client_id';
-        this.createMeetingInServerVersionUrl = '/plugins/skype4business/api/v1/create_meeting_in_server_version';
-        this.productTypeUrl = '/plugins/skype4business/api/v1/product_type';
-        this.authUrl = '/plugins/skype4business/api/v1/auth';
-        this.redirectUrl = '/plugins/skype4business/api/v1/auth_redirect';
+        this.registerMeetingFromOnlineVersionUrl = `${this.url}/register_meeting_from_online_version`;
+        this.clientIdUrl = `${this.url}/client_id`;
+        this.createMeetingInServerVersionUrl = `${this.url}/create_meeting_in_server_version`;
+        this.productTypeUrl = `${this.url}/product_type`;
+        this.authUrl = `${this.url}/auth`;
+        this.redirectUrl = `${this.url}/auth_redirect`;
     }
 
     createMeeting = async (channelId, currentUserId, getAuthenticationResult, personal = true, topic = '') => {
