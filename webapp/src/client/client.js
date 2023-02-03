@@ -125,7 +125,7 @@ AuthenticationContext.prototype._loginPopup = function _loginPopup(urlNavigate, 
 
 export default class Client {
     setServerRoute(url) {
-        this.url = url + `/plugins/${pluginID}/api/v1`;
+        this.url = `${url}/plugins/${pluginID}/api/v1`;
         this.autodiscoverServiceUrl = 'https://webdir.online.lync.com/autodiscover/autodiscoverservice.svc/root';
         this.registerMeetingFromOnlineVersionUrl = `${this.url}/register_meeting_from_online_version`;
         this.clientIdUrl = `${this.url}/client_id`;
