@@ -11,12 +11,15 @@ import Icon from './components/icon.jsx';
 import PostTypeS4b from './components/post_type_s4b';
 import {startMeeting} from './actions';
 import {handleAuthenticationResult} from './websocket';
+import {getPluginServerRoute} from './selectors';
 import Reducer from './reducers';
+import Client from './client';
 
 class Plugin {
     // eslint-disable-next-line no-unused-vars
     initialize(registry, store) {
         registry.registerReducer(Reducer);
+        Client.setServerRoute(getPluginServerRoute(store.getState()));
 
         const helpText = 'Start Skype for Business Meeting';
         const action = (channel) => {
